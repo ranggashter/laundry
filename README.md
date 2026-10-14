@@ -1,3 +1,4 @@
+# laundry
 # Aplikasi Laundry Sederhana (PHP Native)
 
 Contoh aplikasi belajar PHP prosedural, PDO/MySQL, session, dan Bootstrap 5. Tidak menggunakan framework.
