@@ -1,0 +1,29 @@
+/* Sedikit sentuhan tambahan di atas komponen standar Bootstrap. */
+body {
+    min-height: 100vh;
+}
+
+.stat-card {
+    border: 0;
+    box-shadow: 0 .25rem 1rem rgba(28, 45, 80, .08);
+}
+
+.table th {
+    white-space: nowrap;
+}
+
+.receipt {
+    max-width: 760px;
+    margin-inline: auto;
+}
+
+@media print {
+    nav, .no-print, footer {
+        display: none !important;
+    }
+
+    body, main {
+        background: #fff !important;
+        padding: 0 !important;
+    }
+}
