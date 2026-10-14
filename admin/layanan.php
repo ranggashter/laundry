@@ -95,61 +95,120 @@ $services = $pdo->query('SELECT * FROM layanan ORDER BY jenis, nama')->fetchAll(
 render_header('Kelola Layanan');
 ?>
 <h1 class="h3 mb-4">Kelola Layanan</h1>
-<?php if ($error && !$priceError): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
+<?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
 <div class="row g-4">
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm"><div class="card-body">
-            <h2 class="h5"><?= $formValues['id'] ? 'Edit layanan' : 'Tambah layanan' ?></h2>
+            <h2 class="h5"><?= $editing ? 'Edit layanan' : 'Tambah layanan' ?></h2>
             <form method="post">
                 <?= csrf_field() ?>
-                <input type="hidden" name="id" value="<?= e($formValues['id']) ?>">
-                <div class="mb-3"><label class="form-label" for="nama">Nama layanan</label><input class="form-control" id="nama" name="nama" value="<?= e($formValues['nama']) ?>" required></div>
+                <input type="hidden" name="id" value="<?= e($editing['id'] ?? '') ?>">
+                <div class="mb-3"><label class="form-label" for="nama">Nama layanan</label><input class="form-control" id="nama" name="nama" value="<?= e($editing['nama'] ?? '') ?>" required></div>
                 <div class="mb-3"><label class="form-label" for="jenis">Jenis</label>
                     <select class="form-select" id="jenis" name="jenis" required>
                         <?php foreach (['Reguler', 'Express'] as $type): ?>
-                            <option value="<?= e($type) ?>" <?= $formValues['jenis'] === $type ? 'selected' : '' ?>><?= e($type) ?></option>
+                            <option value="<?= e($type) ?>" <?= ($editing['jenis'] ?? '') === $type ? 'selected' : '' ?>><?= e($type) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="harga_per_kg">Harga per kg</label>
-                    <div class="input-group">
-                        <span class="input-group-text">Rp</span>
-                        <input class="form-control <?= $priceError ? 'is-invalid' : '' ?>" type="number" id="harga_per_kg" name="harga_per_kg" min="1" max="9999999999" step="1" inputmode="numeric" placeholder="Contoh: 7000" value="<?= e($formValues['harga_per_kg']) ?>" aria-describedby="bantuan-harga" required>
-                        <span class="input-group-text">/kg</span>
-                    </div>
-                    <div class="form-text" id="bantuan-harga">Ketik angka saja tanpa titik. Contoh: 7000 berarti Rp 7.000 per kg.</div>
-                    <?php if ($priceError): ?><div class="text-danger small mt-1"><?= e($error) ?></div><?php endif; ?>
-                </div>
-                <div class="mb-3"><label class="form-label" for="durasi_jam">Durasi (jam)</label><input class="form-control" type="number" id="durasi_jam" name="durasi_jam" min="1" value="<?= e($formValues['durasi_jam']) ?>" required></div>
-                <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="aktif" name="aktif" <?= $formValues['aktif'] ? 'checked' : '' ?>><label class="form-check-label" for="aktif">Layanan aktif</label></div>
+                <div class="mb-3"><label class="form-label" for="harga_per_kg">Harga per kg (Rp)</label><input class="form-control" type="number" id="harga_per_kg" name="harga_per_kg" min="1" step="100" value="<?= e($editing['harga_per_kg'] ?? '') ?>" required></div>
+                <div class="mb-3"><label class="form-label" for="durasi_jam">Durasi (jam)</label><input class="form-control" type="number" id="durasi_jam" name="durasi_jam" min="1" value="<?= e($editing['durasi_jam'] ?? '') ?>" required></div>
+                <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="aktif" name="aktif" <?= !isset($editing['aktif']) || $editing['aktif'] ? 'checked' : '' ?>><label class="form-check-label" for="aktif">Layanan aktif</label></div>
                 <button class="btn btn-primary" type="submit">Simpan layanan</button>
-                <?php if ($formValues['id']): ?><a class="btn btn-outline-secondary" href="<?= e(app_url('admin/layanan.php')) ?>">Batal</a><?php endif; ?>
+                <?php if ($editing): ?><a class="btn btn-outline-secondary" href="<?= e(app_url('admin/layanan.php')) ?>">Batal</a><?php endif; ?>
             </form>
         </div></div>
     </div>
+
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Nama</th><th>Jenis</th><th>Harga/kg</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead>
-                <tbody>
-                <?php foreach ($services as $service): ?>
-                    <tr>
-                        <td><?= e($service['nama']) ?></td><td><?= e($service['jenis']) ?></td><td><?= e(rupiah($service['harga_per_kg'])) ?></td>
-                        <td><?= e($service['durasi_jam']) ?> jam</td><td><?= $service['aktif'] ? 'Aktif' : 'Nonaktif' ?></td>
-                        <td class="text-nowrap">
-                            <a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('admin/layanan.php?edit=' . $service['id'])) ?>">Edit</a>
-                            <form class="d-inline" method="post" onsubmit="return confirm('Hapus layanan ini?')">
-                                <?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= e($service['id']) ?>">
-                                <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                <?php if (!$services): ?><tr><td colspan="6" class="text-center text-secondary py-4">Belum ada layanan.</td></tr><?php endif; ?>
-                </tbody>
-            </table>
-        </div></div>
+        <div class="card shadow-sm">
+            <div class="p-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-collection text-primary"></i>
+                    <h2 class="h6 fw-bold mb-0">Daftar Paket Cucian Tersedia</h2>
+                </div>
+                <span class="text-muted small">Diurutkan berdasarkan jenis</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Layanan</th>
+                            <th>Kategori</th>
+                            <th>Harga / kg</th>
+                            <th>Durasi</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($services as $service): ?>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="stat-icon <?= $service['jenis'] === 'Express' ? 'amber' : 'indigo' ?>" style="width: 34px; height: 34px; font-size: 0.95rem; border-radius: 9px;">
+                                        <i class="bi <?= $service['jenis'] === 'Express' ? 'bi-lightning-fill' : 'bi-droplet-fill' ?>"></i>
+                                    </div>
+                                    <div>
+                                        <span class="fw-bold text-heading d-block"><?= e($service['nama']) ?></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ($service['jenis'] === 'Express'): ?>
+                                    <span class="badge-soft badge-soft-warning"><i class="bi bi-lightning-charge-fill"></i> Express</span>
+                                <?php else: ?>
+                                    <span class="badge-soft badge-soft-primary"><i class="bi bi-clock-history"></i> Reguler</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-heading"><?= e(rupiah($service['harga_per_kg'])) ?></span>
+                                <span class="text-muted small">/kg</span>
+                            </td>
+                            <td>
+                                <span class="text-body"><i class="bi bi-stopwatch text-muted me-1"></i><?= e($service['durasi_jam']) ?> jam</span>
+                            </td>
+                            <td>
+                                <?php if ($service['aktif']): ?>
+                                    <span class="status-pill active"><span class="status-dot"></span> Aktif</span>
+                                <?php else: ?>
+                                    <span class="status-pill inactive"><span class="status-dot"></span> Nonaktif</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <div class="d-inline-flex gap-1">
+                                    <a class="btn-action" href="<?= e(app_url('admin/layanan.php?edit=' . $service['id'])) ?>" title="Edit Layanan">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form class="d-inline" method="post" onsubmit="return confirm('Hapus layanan <?= e(addslashes($service['nama'])) ?>?')">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?= e($service['id']) ?>">
+                                        <button class="btn-action btn-action-danger" type="submit" title="Hapus Layanan">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$services): ?>
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="bi bi-inbox"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Belum Ada Layanan</h6>
+                                    <p class="text-muted small mb-0">Tambahkan layanan cucian baru melalui formulir di sebelah kiri.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 <?php render_footer(); ?>

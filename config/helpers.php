@@ -88,21 +88,23 @@ function render_header(string $title): void
     // Bagian atas halaman dan menu dibuat sekali agar tidak disalin di semua file.
     $user = $_SESSION['user'] ?? null;
     $role = $user['role'] ?? '';
+    $currentScript = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+
     $menus = [
         'admin' => [
-            ['Dashboard', 'admin/index.php'],
-            ['Layanan', 'admin/layanan.php'],
-            ['Laporan', 'admin/laporan.php'],
+            ['Dashboard', 'admin/index.php', 'bi-grid-1x2'],
+            ['Layanan', 'admin/layanan.php', 'bi-tags'],
+            ['Laporan', 'admin/laporan.php', 'bi-bar-chart-line'],
         ],
         'kasir' => [
-            ['Dashboard', 'kasir/index.php'],
-            ['Buat Pesanan', 'kasir/buat_pesanan.php'],
-            ['Pembayaran', 'kasir/pembayaran.php'],
-            ['Status Cucian', 'kasir/update_status.php'],
+            ['Dashboard', 'kasir/index.php', 'bi-grid-1x2'],
+            ['Buat Pesanan', 'kasir/buat_pesanan.php', 'bi-plus-circle'],
+            ['Pembayaran', 'kasir/pembayaran.php', 'bi-credit-card'],
+            ['Status Cucian', 'kasir/update_status.php', 'bi-arrow-repeat'],
         ],
         'pelanggan' => [
-            ['Dashboard', 'pelanggan/index.php'],
-            ['Riwayat', 'pelanggan/riwayat.php'],
+            ['Dashboard', 'pelanggan/index.php', 'bi-grid-1x2'],
+            ['Riwayat Nota', 'pelanggan/riwayat.php', 'bi-receipt'],
         ],
     ];
     ?>
@@ -111,26 +113,52 @@ function render_header(string $title): void
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?= e($title) ?> - Laundry App</title>
+        <title><?= e($title) ?> · LaundryApp</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="<?= e(app_url('assets/css/style.css')) ?>" rel="stylesheet">
     </head>
-    <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <body>
+    <nav class="navbar navbar-expand-lg app-navbar sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="<?= e(app_url('index.php')) ?>">Laundry App</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Buka navigasi">
-                <span class="navbar-toggler-icon"></span>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="<?= e(app_url('index.php')) ?>">
+                <div class="brand-badge">
+                    <i class="bi bi-droplet-half"></i>
+                </div>
+                <span>Laundry<span class="text-primary-gradient">App</span></span>
+            </a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Buka navigasi">
+                <i class="bi bi-list fs-3 text-dark"></i>
             </button>
             <div class="collapse navbar-collapse" id="mainNav">
                 <?php if ($user): ?>
-                    <ul class="navbar-nav me-auto">
-                        <?php foreach ($menus[$role] ?? [] as [$label, $url]): ?>
-                            <li class="nav-item"><a class="nav-link" href="<?= e(app_url($url)) ?>"><?= e($label) ?></a></li>
+                    <ul class="navbar-nav me-auto ps-lg-3 gap-1">
+                        <?php foreach ($menus[$role] ?? [] as [$label, $url, $icon]): ?>
+                            <?php $isActive = str_ends_with($currentScript, '/' . $url) || ($url === 'admin/index.php' && str_ends_with($currentScript, '/admin/')); ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= e(app_url($url)) ?>">
+                                    <i class="bi <?= e($icon) ?>"></i>
+                                    <span><?= e($label) ?></span>
+                                </a>
+                            </li>
                         <?php endforeach; ?>
                     </ul>
-                    <span class="navbar-text text-white me-lg-3"><?= e($user['nama']) ?></span>
-                    <a class="btn btn-outline-light btn-sm" href="<?= e(app_url('logout.php')) ?>">Keluar</a>
+                    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                        <div class="user-chip">
+                            <div class="user-avatar"><?= strtoupper(substr($user['nama'], 0, 1)) ?></div>
+                            <div class="d-flex flex-column text-start">
+                                <span class="lh-sm"><?= e($user['nama']) ?></span>
+                                <span class="text-muted" style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;"><?= e($role) ?></span>
+                            </div>
+                        </div>
+                        <a class="btn btn-outline-danger btn-sm" href="<?= e(app_url('logout.php')) ?>" title="Keluar dari akun">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span class="d-none d-xl-inline">Keluar</span>
+                        </a>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -144,6 +172,17 @@ function render_footer(): void
     // Tutup halaman dan muat JavaScript Bootstrap serta script aplikasi.
     ?>
     </main>
+    <footer class="app-footer no-print">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold"><i class="bi bi-droplet-half text-primary me-1"></i>LaundryApp</span>
+                <span class="text-muted">· Sistem Manajemen Laundry Modern & Bersih</span>
+            </div>
+            <div class="text-muted small">
+                &copy; <?= date('Y') ?> Laundry Management System.
+            </div>
+        </div>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(app_url('assets/js/app.js')) ?>"></script>
     </body>
@@ -154,13 +193,13 @@ function render_footer(): void
 function status_badge_class(string $status): string
 {
     $classes = [
-        'Menunggu' => 'text-bg-secondary',
-        'Diproses' => 'text-bg-primary',
-        'Selesai' => 'text-bg-success',
-        'Diambil' => 'text-bg-dark',
-        'Belum Lunas' => 'text-bg-warning',
-        'Lunas' => 'text-bg-success',
+        'Menunggu' => 'badge-soft-warning',
+        'Diproses' => 'badge-soft-info',
+        'Selesai' => 'badge-soft-success',
+        'Diambil' => 'badge-soft-secondary',
+        'Belum Lunas' => 'badge-soft-danger',
+        'Lunas' => 'badge-soft-success',
     ];
 
-    return $classes[$status] ?? 'text-bg-secondary';
+    return $classes[$status] ?? 'badge-soft-secondary';
 }
