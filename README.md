@@ -59,6 +59,8 @@ laundry/
 
 Mulai belajar dari `index.php`, lalu ikuti alur membuat pesanan di `kasir/buat_pesanan.php`. Status pada dashboard pelanggan diperbarui dengan memuat ulang halaman setiap 15 detik. Komentar di dalam file menerangkan langkah-langkah penting.
 
+Di halaman Admin > Layanan, masukkan harga sebagai angka tanpa titik atau tulisan "Rp". Contoh: ketik `7000` untuk harga Rp 7.000 per kg.
+
 ## Alur demo
 
 1. Masuk sebagai kasir dan buat pesanan untuk pelanggan demo.
