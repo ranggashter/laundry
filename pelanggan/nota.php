@@ -29,40 +29,119 @@ render_header('Nota Digital');
 ?>
 <div class="receipt">
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-        <a class="btn btn-outline-secondary" href="<?= e(app_url('pelanggan/riwayat.php')) ?>">← Kembali ke riwayat</a>
-        <button class="btn btn-primary" type="button" onclick="window.print()">Cetak nota</button>
+        <a class="btn btn-outline-secondary btn-sm" href="<?= e(app_url('pelanggan/riwayat.php')) ?>">
+            <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
+        </a>
+        <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">
+            <i class="bi bi-printer-fill"></i> Cetak Nota
+        </button>
     </div>
-    <div class="card border-0 shadow-sm">
+    <div class="card shadow-md border-0">
         <div class="card-body p-4 p-md-5">
             <div class="text-center border-bottom pb-4 mb-4">
-                <h1 class="h3">Nota Laundry</h1>
-                <p class="text-secondary mb-1">Simpan nota ini secara digital atau cetak bila diperlukan.</p>
-                <div class="fs-5 fw-semibold"><?= e($transaction['kode_nota']) ?></div>
+                <div class="brand-badge mx-auto mb-2" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                    <i class="bi bi-droplet-half"></i>
+                </div>
+                <h1 class="h4 fw-bold mb-1">Nota Transaksi Cucian</h1>
+                <p class="text-muted small mb-2">Simpan nota digital ini sebagai bukti pengambilan cucian.</p>
+                <div class="badge-soft badge-soft-primary px-3 py-2 font-monospace fs-6">
+                    <?= e($transaction['kode_nota']) ?>
+                </div>
             </div>
+
             <div class="row g-3 mb-4">
-                <div class="col-sm-6"><div class="text-secondary small">Pelanggan</div><div class="fw-semibold"><?= e($transaction['nama_pelanggan']) ?></div><div class="small text-secondary"><?= e($transaction['kode_pelanggan'] ?? '') ?></div></div>
-                <div class="col-sm-6"><div class="text-secondary small">Tanggal masuk</div><div><?= e(date('d/m/Y H:i', strtotime($transaction['dibuat_pada']))) ?></div></div>
+                <div class="col-sm-6">
+                    <div class="text-muted small">Nama Pelanggan</div>
+                    <div class="fw-bold text-heading fs-6"><?= e($transaction['nama_pelanggan']) ?></div>
+                    <?php if (!empty($transaction['kode_pelanggan'])): ?>
+                        <div class="small font-monospace text-muted"><?= e($transaction['kode_pelanggan']) ?></div>
+                    <?php endif; ?>
+                </div>
+                <div class="col-sm-6 text-sm-end">
+                    <div class="text-muted small">Waktu Penerimaan</div>
+                    <div class="fw-semibold text-heading"><?= e(date('d/m/Y H:i', strtotime($transaction['dibuat_pada']))) ?> WIB</div>
+                </div>
             </div>
-            <div class="table-responsive"><table class="table">
-                <thead><tr><th>Layanan</th><th>Berat</th><th>Harga/kg</th><th class="text-end">Total</th></tr></thead>
-                <tbody><tr><td><?= e($transaction['nama_layanan'] ?? '-') ?></td><td><?= e($transaction['berat']) ?> kg</td><td><?= e(rupiah($transaction['harga_per_kg'] ?? 0)) ?></td><td class="text-end"><?= e(rupiah($transaction['total'])) ?></td></tr></tbody>
-            </table></div>
-            <div class="row justify-content-end"><div class="col-sm-7 col-md-6">
-                <div class="d-flex justify-content-between py-1"><span>Total</span><strong><?= e(rupiah($transaction['total'])) ?></strong></div>
-                <div class="d-flex justify-content-between py-1"><span>Telah dibayar</span><span><?= e(rupiah($transaction['dibayar'])) ?></span></div>
-                <div class="d-flex justify-content-between py-1 border-top mt-1"><span>Sisa tagihan</span><strong><?= e(rupiah(max(0, $transaction['total'] - $transaction['dibayar']))) ?></strong></div>
-            </div></div>
-            <div class="row g-3 mt-3">
-                <div class="col-sm-6"><span class="text-secondary">Status cucian:</span> <span class="badge <?= e(status_badge_class($transaction['status_cucian'])) ?>"><?= e($transaction['status_cucian']) ?></span></div>
-                <div class="col-sm-6"><span class="text-secondary">Status pembayaran:</span> <span class="badge <?= e(status_badge_class($transaction['status_pembayaran'])) ?>"><?= e($transaction['status_pembayaran']) ?></span></div>
+
+            <div class="table-responsive mb-4">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Paket Layanan</th>
+                            <th>Berat</th>
+                            <th>Tarif/kg</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <span class="fw-semibold text-heading"><?= e($transaction['nama_layanan'] ?? '-') ?></span>
+                            </td>
+                            <td><?= e($transaction['berat']) ?> kg</td>
+                            <td><?= e(rupiah($transaction['harga_per_kg'] ?? 0)) ?></td>
+                            <td class="text-end fw-bold text-heading"><?= e(rupiah($transaction['total'])) ?></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <hr><h2 class="h6">Pembayaran</h2>
-            <?php if (!$payments): ?><p class="text-secondary">Belum ada pembayaran yang dicatat.</p><?php else: ?>
-                <ul class="list-group list-group-flush">
-                    <?php foreach ($payments as $payment): ?><li class="list-group-item px-0"><?= e(date('d/m/Y H:i', strtotime($payment['dibayar_pada']))) ?> · <?= e($payment['jenis']) ?> <strong class="float-end"><?= e(rupiah($payment['jumlah'])) ?></strong></li><?php endforeach; ?>
-                </ul>
+
+            <div class="row justify-content-end mb-4">
+                <div class="col-sm-7 col-md-6">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="d-flex justify-content-between py-1 text-muted small">
+                            <span>Total Biaya</span>
+                            <strong class="text-heading"><?= e(rupiah($transaction['total'])) ?></strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 text-muted small">
+                            <span>Telah Dibayar</span>
+                            <span class="text-success fw-semibold"><?= e(rupiah($transaction['dibayar'])) ?></span>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-top mt-1 pt-1">
+                            <span class="fw-bold text-heading">Sisa Tagihan</span>
+                            <strong class="text-danger fs-6"><?= e(rupiah(max(0, $transaction['total'] - $transaction['dibayar']))) ?></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4 p-3 border rounded-3 bg-white">
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block mb-1">Status Pengerjaan Cucian:</span>
+                    <span class="badge-soft <?= e(status_badge_class($transaction['status_cucian'])) ?>">
+                        <i class="bi bi-gear-wide-connected"></i> <?= e($transaction['status_cucian']) ?>
+                    </span>
+                </div>
+                <div class="col-sm-6">
+                    <span class="text-muted small d-block mb-1">Status Pembayaran:</span>
+                    <span class="badge-soft <?= e(status_badge_class($transaction['status_pembayaran'])) ?>">
+                        <i class="bi bi-wallet2"></i> <?= e($transaction['status_pembayaran']) ?>
+                    </span>
+                </div>
+            </div>
+
+            <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-muted"></i> Rincian Pembayaran Masuk
+            </h2>
+            <?php if (!$payments): ?>
+                <p class="text-muted small mb-0">Belum ada pembayaran yang dicatat.</p>
+            <?php else: ?>
+                <div class="list-group list-group-flush border rounded-3 mb-4">
+                    <?php foreach ($payments as $payment): ?>
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 small">
+                            <div>
+                                <span class="fw-semibold text-heading"><?= e($payment['jenis']) ?></span>
+                                <span class="text-muted ms-2"><?= e(date('d/m/Y H:i', strtotime($payment['dibayar_pada']))) ?> WIB</span>
+                            </div>
+                            <strong class="text-success"><?= e(rupiah($payment['jumlah'])) ?></strong>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
-            <p class="text-center text-secondary small mt-4 mb-0">Terima kasih telah menggunakan layanan kami.</p>
+
+            <div class="text-center text-muted small mt-4 pt-3 border-top">
+                <i class="bi bi-heart-fill text-danger me-1"></i> Terima kasih telah mempercayakan pakaian Anda kepada kami!
+            </div>
         </div>
     </div>
 </div>

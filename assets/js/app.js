@@ -9,10 +9,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const option = service.options[service.selectedIndex];
-        const price = Number(option.getAttribute('data-price') || 0);
+        const option = service.selectedIndex >= 0 ? service.options[service.selectedIndex] : null;
+        const price = option ? Number(option.getAttribute('data-price') || 0) : 0;
         const kilograms = Number(weight.value || 0);
-        const amount = price * kilograms;
+        const amount = Math.round(price * kilograms);
 
         total.textContent = 'Rp ' + amount.toLocaleString('id-ID');
     }
@@ -31,9 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const codeInput = document.querySelector('#kode-pelanggan');
             const customer = document.querySelector('#pelanggan_id');
             const message = document.querySelector('#scan-message');
-            const code = codeInput.value.trim();
-            let match = null;
+            if (!codeInput || !customer || !message) {
+                return;
+            }
 
+            const code = codeInput.value.trim();
+            if (!code) {
+                message.textContent = 'Silakan ketik kode QR pelanggan terlebih dahulu.';
+                message.className = 'form-text text-warning';
+                return;
+            }
+
+            let match = null;
             for (let i = 0; i < customer.options.length; i++) {
                 if (customer.options[i].getAttribute('data-code') === code) {
                     match = customer.options[i];

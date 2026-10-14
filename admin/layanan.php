@@ -5,6 +5,7 @@ require_role('admin');
 $pdo = getPDO();
 $error = '';
 $priceError = false;
+$editing = null;
 $formValues = [
     'id' => '',
     'nama' => '',
@@ -94,30 +95,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $services = $pdo->query('SELECT * FROM layanan ORDER BY jenis, nama')->fetchAll();
 render_header('Kelola Layanan');
 ?>
-<h1 class="h3 mb-4">Kelola Layanan</h1>
-<?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon indigo shadow-sm">
+            <i class="bi bi-tags-fill"></i>
+        </div>
+        <div>
+            <h1 class="h3 mb-0">Kelola Layanan</h1>
+            <p class="text-muted mb-0 small">Atur daftar paket cuci, tarif per kilogram, dan durasi estimasi pengerjaan.</p>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge-soft badge-soft-primary px-3 py-2 fs-6">
+            <i class="bi bi-box-seam me-1"></i> <?= count($services) ?> Total Paket
+        </span>
+    </div>
+</div>
+
+<?php if ($error): ?>
+    <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-circle-fill fs-5"></i>
+        <div><?= e($error) ?></div>
+    </div>
+<?php endif; ?>
+
 <div class="row g-4">
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <h2 class="h5"><?= $editing ? 'Edit layanan' : 'Tambah layanan' ?></h2>
-            <form method="post">
-                <?= csrf_field() ?>
-                <input type="hidden" name="id" value="<?= e($editing['id'] ?? '') ?>">
-                <div class="mb-3"><label class="form-label" for="nama">Nama layanan</label><input class="form-control" id="nama" name="nama" value="<?= e($editing['nama'] ?? '') ?>" required></div>
-                <div class="mb-3"><label class="form-label" for="jenis">Jenis</label>
-                    <select class="form-select" id="jenis" name="jenis" required>
-                        <?php foreach (['Reguler', 'Express'] as $type): ?>
-                            <option value="<?= e($type) ?>" <?= ($editing['jenis'] ?? '') === $type ? 'selected' : '' ?>><?= e($type) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+        <div class="card shadow-sm sticky-top" style="top: 85px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="icon-box <?= $editing ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary' ?>">
+                        <i class="bi <?= $editing ? 'bi-pencil-square' : 'bi-plus-lg' ?>"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 fw-bold mb-0"><?= $editing ? 'Edit Layanan' : 'Tambah Layanan Baru' ?></h2>
+                        <small class="text-muted"><?= $editing ? 'Perbarui data paket yang dipilih' : 'Tambahkan paket cucian baru' ?></small>
+                    </div>
                 </div>
-                <div class="mb-3"><label class="form-label" for="harga_per_kg">Harga per kg (Rp)</label><input class="form-control" type="number" id="harga_per_kg" name="harga_per_kg" min="1" step="100" value="<?= e($editing['harga_per_kg'] ?? '') ?>" required></div>
-                <div class="mb-3"><label class="form-label" for="durasi_jam">Durasi (jam)</label><input class="form-control" type="number" id="durasi_jam" name="durasi_jam" min="1" value="<?= e($editing['durasi_jam'] ?? '') ?>" required></div>
-                <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="aktif" name="aktif" <?= !isset($editing['aktif']) || $editing['aktif'] ? 'checked' : '' ?>><label class="form-check-label" for="aktif">Layanan aktif</label></div>
-                <button class="btn btn-primary" type="submit">Simpan layanan</button>
-                <?php if ($editing): ?><a class="btn btn-outline-secondary" href="<?= e(app_url('admin/layanan.php')) ?>">Batal</a><?php endif; ?>
-            </form>
-        </div></div>
+
+                <form method="post">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= e($formValues['id']) ?>">
+
+                    <div class="mb-3">
+                        <label class="form-label" for="nama">
+                            <i class="bi bi-card-text text-muted"></i> Nama Layanan
+                        </label>
+                        <input class="form-control" id="nama" name="nama" placeholder="Contoh: Cuci Express 8 Jam" value="<?= e($formValues['nama']) ?>" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="jenis">
+                            <i class="bi bi-lightning-charge text-muted"></i> Jenis Paket
+                        </label>
+                        <select class="form-select" id="jenis" name="jenis" required>
+                            <?php foreach (['Reguler', 'Express'] as $type): ?>
+                                <option value="<?= e($type) ?>" <?= $formValues['jenis'] === $type ? 'selected' : '' ?>>
+                                    <?= e($type) ?> <?= $type === 'Express' ? '⚡ (Prioritas Cepat)' : '🕒 (Standar Hemat)' ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="harga_per_kg">
+                            <i class="bi bi-cash-stack text-muted"></i> Harga per kg
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input class="form-control <?= $priceError ? 'is-invalid' : '' ?>" type="number" id="harga_per_kg" name="harga_per_kg" min="0" step="100" placeholder="7000" value="<?= e($formValues['harga_per_kg']) ?>" required>
+                            <span class="input-group-text">/ kg</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="durasi_jam">
+                            <i class="bi bi-hourglass-split text-muted"></i> Estimasi Durasi
+                        </label>
+                        <div class="input-group">
+                            <input class="form-control" type="number" id="durasi_jam" name="durasi_jam" min="1" placeholder="24" value="<?= e($formValues['durasi_jam']) ?>" required>
+                            <span class="input-group-text">Jam</span>
+                        </div>
+                    </div>
+
+                    <div class="card p-3 bg-light border-0 mb-4">
+                        <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between ps-0">
+                            <label class="form-check-label fw-semibold" for="aktif">
+                                Status Aktif
+                                <div class="text-muted small fw-normal">Dapat dipilih saat membuat pesanan baru</div>
+                            </label>
+                            <input class="form-check-input ms-2" type="checkbox" role="switch" id="aktif" name="aktif" <?= !empty($formValues['aktif']) ? 'checked' : '' ?>>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-check-lg"></i> <?= $editing ? 'Perbarui Layanan' : 'Simpan Layanan' ?>
+                        </button>
+                        <?php if ($editing): ?>
+                            <a class="btn btn-outline-secondary" href="<?= e(app_url('admin/layanan.php')) ?>">
+                                <i class="bi bi-x-circle"></i> Batal Edit
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <div class="col-lg-8">

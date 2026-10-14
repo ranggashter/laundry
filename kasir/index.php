@@ -15,21 +15,121 @@ $recent = $pdo->query(
 )->fetchAll();
 render_header('Dashboard Kasir');
 ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-    <div><h1 class="h3 mb-1">Dashboard Kasir</h1><p class="text-secondary mb-0">Pantau cucian dan transaksi terkini.</p></div>
-    <a class="btn btn-primary" href="<?= e(app_url('kasir/buat_pesanan.php')) ?>">+ Buat Pesanan</a>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Dashboard Kasir</h1>
+        <p class="text-muted mb-0 small">Pantau status antrean cucian dan transaksi masuk secara real-time.</p>
+    </div>
+    <a class="btn btn-primary" href="<?= e(app_url('kasir/buat_pesanan.php')) ?>">
+        <i class="bi bi-plus-circle-fill"></i> Buat Pesanan Baru
+    </a>
 </div>
+
 <div class="row g-3 mb-4">
-    <?php foreach (['baru' => 'Menunggu', 'proses' => 'Diproses', 'selesai' => 'Selesai'] as $key => $label): ?>
-        <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="text-secondary"><?= e($label) ?></div><div class="display-6 fw-semibold"><?= $summary[$key] ?></div></div></div></div>
-    <?php endforeach; ?>
+    <div class="col-md-4">
+        <div class="card stat-card h-100">
+            <div class="card-body p-4 d-flex align-items-center gap-3">
+                <div class="stat-icon amber">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Cucian Menunggu</div>
+                    <div class="h2 mb-0 fw-bold text-heading"><?= $summary['baru'] ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card h-100">
+            <div class="card-body p-4 d-flex align-items-center gap-3">
+                <div class="stat-icon sky">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Sedang Diproses</div>
+                    <div class="h2 mb-0 fw-bold text-heading"><?= $summary['proses'] ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card h-100">
+            <div class="card-body p-4 d-flex align-items-center gap-3">
+                <div class="stat-icon emerald">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Selesai Dicuci</div>
+                    <div class="h2 mb-0 fw-bold text-heading"><?= $summary['selesai'] ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="card border-0 shadow-sm"><div class="card-header bg-white"><h2 class="h5 mb-0">Transaksi terbaru</h2></div><div class="table-responsive">
-    <table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nota</th><th>Pelanggan</th><th>Tanggal</th><th>Total</th><th>Status cucian</th><th></th></tr></thead><tbody>
-    <?php foreach ($recent as $item): ?>
-        <tr><td><?= e($item['kode_nota']) ?></td><td><?= e($item['nama_pelanggan']) ?></td><td><?= e(date('d/m/Y H:i', strtotime($item['dibuat_pada']))) ?></td><td><?= e(rupiah($item['total'])) ?></td><td><span class="badge <?= e(status_badge_class($item['status_cucian'])) ?>"><?= e($item['status_cucian']) ?></span></td><td><a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('kasir/pembayaran.php?id=' . $item['id'])) ?>">Buka</a></td></tr>
-    <?php endforeach; ?>
-    <?php if (!$recent): ?><tr><td colspan="6" class="text-center text-secondary py-4">Belum ada transaksi.</td></tr><?php endif; ?>
-    </tbody></table>
-</div></div>
+
+<div class="card shadow-sm">
+    <div class="p-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-primary"></i>
+            <h2 class="h6 fw-bold mb-0">Transaksi Terbaru</h2>
+        </div>
+        <span class="text-muted small">8 transaksi terakhir</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nota</th>
+                    <th>Pelanggan</th>
+                    <th>Waktu Masuk</th>
+                    <th>Total Biaya</th>
+                    <th>Status Cucian</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($recent as $item): ?>
+                <tr>
+                    <td>
+                        <span class="font-monospace fw-bold text-primary"><?= e($item['kode_nota']) ?></span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-heading"><?= e($item['nama_pelanggan']) ?></div>
+                    </td>
+                    <td>
+                        <div class="text-heading"><?= e(date('d/m/Y', strtotime($item['dibuat_pada']))) ?></div>
+                        <div class="text-muted small"><?= e(date('H:i', strtotime($item['dibuat_pada']))) ?> WIB</div>
+                    </td>
+                    <td>
+                        <span class="fw-bold text-heading"><?= e(rupiah($item['total'])) ?></span>
+                    </td>
+                    <td>
+                        <span class="badge-soft <?= e(status_badge_class($item['status_cucian'])) ?>">
+                            <?= e($item['status_cucian']) ?>
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('kasir/pembayaran.php?id=' . $item['id'])) ?>">
+                            <i class="bi bi-credit-card"></i> Buka Nota
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (!$recent): ?>
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-inbox"></i>
+                            </div>
+                            <h6 class="fw-bold">Belum Ada Transaksi</h6>
+                            <p class="text-muted small mb-0">Pesanan baru yang dibuat akan langsung tampil di sini.</p>
+                        </div>
+                    </td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
 <?php render_footer(); ?>

@@ -66,48 +66,172 @@ if ($transactionId) {
 }
 render_header('Pembayaran');
 ?>
-<h1 class="h3 mb-4">Catat Pembayaran</h1>
-<?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon emerald shadow-sm">
+            <i class="bi bi-credit-card-fill"></i>
+        </div>
+        <div>
+            <h1 class="h3 mb-0">Catat Pembayaran</h1>
+            <p class="text-muted mb-0 small">Terima uang muka (DP) atau pelunasan tagihan cucian pelanggan.</p>
+        </div>
+    </div>
+</div>
+
+<?php if ($error): ?>
+    <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-circle-fill fs-5"></i>
+        <div><?= e($error) ?></div>
+    </div>
+<?php endif; ?>
+
 <div class="row g-4">
     <div class="col-lg-5">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <h2 class="h5">Pilih transaksi belum lunas</h2>
-            <form method="get">
-                <label class="form-label" for="pilih-id">Nota</label>
-                <select class="form-select mb-3" id="pilih-id" name="id" required>
-                    <option value="">Pilih transaksi</option>
-                    <?php foreach ($pending as $item): ?>
-                        <option value="<?= e($item['id']) ?>" <?= (int) $transactionId === (int) $item['id'] ? 'selected' : '' ?>><?= e($item['kode_nota']) ?> — <?= e($item['nama_pelanggan']) ?> (sisa <?= e(rupiah($item['total'] - $item['dibayar'])) ?>)</option>
-                    <?php endforeach; ?>
-                    <?php if ($current && $current['status_pembayaran'] === 'Lunas'): ?><option value="<?= e($current['id']) ?>" selected><?= e($current['kode_nota']) ?> — sudah lunas</option><?php endif; ?>
-                </select>
-                <button class="btn btn-outline-primary" type="submit">Buka transaksi</button>
-            </form>
-        </div></div>
+        <div class="card shadow-sm sticky-top" style="top: 85px;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div>
+                        <h2 class="h6 fw-bold mb-0">Pilih Nota Tagihan</h2>
+                        <small class="text-muted">Cari nota yang belum lunas</small>
+                    </div>
+                </div>
+
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label" for="pilih-id">
+                            <i class="bi bi-search text-muted"></i> Daftar Nota Belum Lunas
+                        </label>
+                        <select class="form-select" id="pilih-id" name="id" required>
+                            <option value="">-- Pilih Transaksi --</option>
+                            <?php foreach ($pending as $item): ?>
+                                <option value="<?= e($item['id']) ?>" <?= (int) $transactionId === (int) $item['id'] ? 'selected' : '' ?>>
+                                    <?= e($item['kode_nota']) ?> — <?= e($item['nama_pelanggan']) ?> (Sisa <?= e(rupiah($item['total'] - $item['dibayar'])) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                            <?php if ($current && $current['status_pembayaran'] === 'Lunas'): ?>
+                                <option value="<?= e($current['id']) ?>" selected><?= e($current['kode_nota']) ?> — Sudah Lunas</option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <button class="btn btn-outline-primary w-100" type="submit">
+                        <i class="bi bi-folder2-open"></i> Buka Rincian Nota
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
+
     <div class="col-lg-7">
         <?php if ($current): ?>
             <?php $remaining = max(0, (float) $current['total'] - (float) $current['dibayar']); ?>
-            <div class="card border-0 shadow-sm"><div class="card-body">
-                <h2 class="h5">Nota <?= e($current['kode_nota']) ?></h2>
-                <p class="mb-1">Pelanggan: <?= e($current['nama_pelanggan']) ?></p>
-                <p class="mb-1">Total: <strong><?= e(rupiah($current['total'])) ?></strong></p>
-                <p class="mb-3">Dibayar: <?= e(rupiah($current['dibayar'])) ?> · Sisa: <strong><?= e(rupiah($remaining)) ?></strong></p>
-                <?php if ($remaining > 0): ?>
-                    <form method="post" class="row g-2 align-items-end">
-                        <?= csrf_field() ?><input type="hidden" name="transaksi_id" value="<?= e($current['id']) ?>">
-                        <div class="col"><label class="form-label" for="jumlah">Jumlah pembayaran (Rp)</label><input class="form-control" type="number" id="jumlah" name="jumlah" min="1" max="<?= e($remaining) ?>" step="1" required></div>
-                        <div class="col-auto"><button class="btn btn-primary" type="submit">Catat pembayaran</button></div>
-                    </form>
-                <?php else: ?><div class="alert alert-success mb-0">Tagihan sudah lunas.</div><?php endif; ?>
-                <hr><h3 class="h6">Riwayat pembayaran</h3>
-                <?php if (!$payments): ?><p class="text-secondary mb-0">Belum ada pembayaran.</p><?php else: ?>
-                    <ul class="list-group list-group-flush">
-                        <?php foreach ($payments as $payment): ?><li class="list-group-item px-0"><?= e($payment['jenis']) ?> — <?= e(rupiah($payment['jumlah'])) ?> <span class="text-secondary float-end"><?= e(date('d/m/Y H:i', strtotime($payment['dibayar_pada']))) ?></span></li><?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
-            </div></div>
-        <?php else: ?><div class="alert alert-info">Pilih transaksi untuk melihat sisa tagihan dan mencatat pembayaran.</div><?php endif; ?>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="badge-soft badge-soft-primary mb-1">
+                                <i class="bi bi-hash"></i> <?= e($current['kode_nota']) ?>
+                            </span>
+                            <h2 class="h5 fw-bold mb-0 text-heading">Pelanggan: <?= e($current['nama_pelanggan']) ?></h2>
+                            <small class="text-muted">Waktu masuk: <?= date('d M Y, H:i', strtotime($current['dibuat_pada'])) ?> WIB</small>
+                        </div>
+                        <div>
+                            <?php if ($remaining <= 0): ?>
+                                <span class="badge-soft badge-soft-success fs-6"><i class="bi bi-check-circle-fill"></i> Lunas</span>
+                            <?php else: ?>
+                                <span class="badge-soft badge-soft-danger fs-6"><i class="bi bi-hourglass-split"></i> Belum Lunas</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4 text-center">
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Total Biaya</small>
+                                <strong class="fs-6 text-heading"><?= e(rupiah($current['total'])) ?></strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Telah Dibayar</small>
+                                <strong class="fs-6 text-success"><?= e(rupiah($current['dibayar'])) ?></strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <small class="text-muted d-block">Sisa Tagihan</small>
+                                <strong class="fs-6 text-danger"><?= e(rupiah($remaining)) ?></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if ($remaining > 0): ?>
+                        <div class="card border-0 bg-primary-subtle p-3 mb-4">
+                            <h3 class="h6 fw-bold text-primary mb-2">Formulir Pembayaran</h3>
+                            <form method="post" class="row g-2 align-items-end">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="transaksi_id" value="<?= e($current['id']) ?>">
+                                <div class="col-sm-8">
+                                    <label class="form-label text-heading" for="jumlah">Jumlah Bayar</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input class="form-control" type="number" id="jumlah" name="jumlah" min="1" max="<?= e($remaining) ?>" step="any" placeholder="Ketik jumlah uang" value="<?= e($remaining) ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <button class="btn btn-primary w-100" type="submit">
+                                        <i class="bi bi-check2"></i> Simpan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-success mb-4">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div>Seluruh tagihan cucian pada nota ini telah lunas dibayar.</div>
+                        </div>
+                    <?php endif; ?>
+
+                    <h3 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-muted"></i> Riwayat Pembayaran Masuk
+                    </h3>
+                    <?php if (!$payments): ?>
+                        <p class="text-muted small mb-0">Belum ada riwayat pembayaran yang tercatat.</p>
+                    <?php else: ?>
+                        <div class="list-group list-group-flush border rounded-3">
+                            <?php foreach ($payments as $payment): ?>
+                                <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="stat-icon emerald" style="width: 32px; height: 32px; font-size: 0.9rem; border-radius: 8px;">
+                                            <i class="bi bi-cash"></i>
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold text-heading d-block"><?= e($payment['jenis']) ?></span>
+                                            <small class="text-muted"><?= e(date('d/m/Y H:i', strtotime($payment['dibayar_pada']))) ?> WIB</small>
+                                        </div>
+                                    </div>
+                                    <strong class="text-success fs-6"><?= e(rupiah($payment['jumlah'])) ?></strong>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-credit-card-2-front"></i>
+                        </div>
+                        <h6 class="fw-bold text-heading">Pilih Transaksi Terlebih Dahulu</h6>
+                        <p class="text-muted small mb-0">Pilih nota di panel sebelah kiri untuk melihat rincian tagihan dan mencatat pembayaran.</p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php render_footer(); ?>
