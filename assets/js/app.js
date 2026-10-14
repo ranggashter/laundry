@@ -60,4 +60,82 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Perhitungan kalkulasi kasir: uang tunai, kembalian, dan status DP/Lunas
+    const uangInput = document.querySelector('#uang_diterima');
+    const statusBadge = document.querySelector('#calc-status-badge');
+    const paidAmountElem = document.querySelector('#calc-paid-amount');
+    const resultLabel = document.querySelector('#calc-result-label');
+    const resultAmountElem = document.querySelector('#calc-result-amount');
+    const noteElem = document.querySelector('#calc-note');
+
+    function formatRupiah(val) {
+        return 'Rp ' + Math.round(val).toLocaleString('id-ID');
+    }
+
+    function updatePaymentCalc() {
+        if (!uangInput || !statusBadge || !paidAmountElem || !resultLabel || !resultAmountElem) {
+            return;
+        }
+
+        const remaining = parseFloat(uangInput.getAttribute('data-remaining') || '0');
+        const tendered = parseFloat(uangInput.value || '0');
+
+        if (tendered <= 0) {
+            statusBadge.textContent = 'Menunggu Input';
+            statusBadge.className = 'badge-soft badge-soft-secondary';
+            paidAmountElem.textContent = 'Rp 0';
+            resultLabel.textContent = 'Sisa Tagihan:';
+            resultAmountElem.textContent = formatRupiah(remaining);
+            resultAmountElem.className = 'fs-5 fw-bold text-danger';
+            if (noteElem) noteElem.textContent = 'Masukkan jumlah uang tunai yang diserahkan pelanggan.';
+            return;
+        }
+
+        if (tendered >= remaining) {
+            const change = tendered - remaining;
+            statusBadge.textContent = change > 0 ? 'LUNAS (Uang Lebih)' : 'LUNAS (Uang Pas)';
+            statusBadge.className = 'badge-soft badge-soft-success';
+            paidAmountElem.textContent = formatRupiah(remaining);
+            resultLabel.textContent = 'Kembalian:';
+            resultAmountElem.textContent = formatRupiah(change);
+            resultAmountElem.className = 'fs-5 fw-bold ' + (change > 0 ? 'text-primary' : 'text-success');
+            if (noteElem) {
+                noteElem.textContent = change > 0 
+                    ? 'Uang lebih. Berikan kembalian ' + formatRupiah(change) + ' kepada pelanggan.' 
+                    : 'Uang pas sesuai total sisa tagihan.';
+            }
+        } else {
+            const sisaBaru = remaining - tendered;
+            statusBadge.textContent = 'BELUM LUNAS (DP)';
+            statusBadge.className = 'badge-soft badge-soft-warning';
+            paidAmountElem.textContent = formatRupiah(tendered);
+            resultLabel.textContent = 'Sisa Tagihan Belum Dibayar:';
+            resultAmountElem.textContent = formatRupiah(sisaBaru);
+            resultAmountElem.className = 'fs-5 fw-bold text-danger';
+            if (noteElem) {
+                noteElem.textContent = 'Uang kurang dari sisa tagihan. Dicatat sebagai Uang Muka (DP). Kurang ' + formatRupiah(sisaBaru) + '.';
+            }
+        }
+    }
+
+    if (uangInput) {
+        uangInput.addEventListener('input', updatePaymentCalc);
+        uangInput.addEventListener('change', updatePaymentCalc);
+
+        // Tombol nominal cepat
+        const quickButtons = document.querySelectorAll('.btn-quick-cash');
+        quickButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const val = this.getAttribute('data-val');
+                if (val) {
+                    uangInput.value = val;
+                    updatePaymentCalc();
+                    uangInput.focus();
+                }
+            });
+        });
+
+        updatePaymentCalc();
+    }
 });

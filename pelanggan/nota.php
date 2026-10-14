@@ -22,7 +22,7 @@ if (!$transaction) {
     render_footer();
     exit;
 }
-$paymentQuery = $pdo->prepare('SELECT jumlah, jenis, dibayar_pada FROM pembayaran WHERE transaksi_id = ? ORDER BY id');
+$paymentQuery = $pdo->prepare('SELECT jumlah, uang_diterima, kembalian, jenis, dibayar_pada FROM pembayaran WHERE transaksi_id = ? ORDER BY id');
 $paymentQuery->execute([$id]);
 $payments = $paymentQuery->fetchAll();
 render_header('Nota Digital');
@@ -132,6 +132,14 @@ render_header('Nota Digital');
                             <div>
                                 <span class="fw-semibold text-heading"><?= e($payment['jenis']) ?></span>
                                 <span class="text-muted ms-2"><?= e(date('d/m/Y H:i', strtotime($payment['dibayar_pada']))) ?> WIB</span>
+                                <?php if ((float) $payment['uang_diterima'] > 0): ?>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        Uang diterima: <?= e(rupiah($payment['uang_diterima'])) ?>
+                                        <?php if ((float) $payment['kembalian'] > 0): ?>
+                                            · <span class="text-primary fw-semibold">Kembalian: <?= e(rupiah($payment['kembalian'])) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <strong class="text-success"><?= e(rupiah($payment['jumlah'])) ?></strong>
                         </div>

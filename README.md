@@ -57,7 +57,7 @@ laundry/
 4. Saat form dikirim, PHP memeriksa input, menjalankan query database, lalu menampilkan hasilnya.
 5. `config/helpers.php` berisi fungsi yang dipakai berulang, seperti menampilkan teks dengan aman dan memformat Rupiah.
 
-Mulai belajar dari `index.php`, lalu ikuti alur membuat pesanan di `kasir/buat_pesanan.php`. Status pada dashboard pelanggan diperbarui dengan memuat ulang halaman setiap 15 detik. Komentar di dalam file menerangkan langkah-langkah penting.
+Mulai belajar dari `index.php`, lalu ikuti alur membuat pesanan di `kasir/buat_pesanan.php`. Status pada dashboard pelanggan dapat diperbarui dengan menekan tombol Refresh. Komentar di dalam file menerangkan langkah-langkah penting.
 
 Di halaman Admin > Layanan, masukkan harga sebagai angka tanpa titik atau tulisan "Rp". Contoh: ketik `7000` untuk harga Rp 7.000 per kg.
 

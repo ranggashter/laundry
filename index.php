@@ -7,7 +7,10 @@ if (!empty($_SESSION['user'])) {
 }
 
 $error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$successMessage = $_SESSION['flash_success'] ?? '';
+unset($_SESSION['flash_success']);
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     // Periksa token formulir sebelum memproses data login.
     verify_csrf();
     $username = trim($_POST['username'] ?? '');
@@ -31,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 render_header('Masuk');
 ?>
-<div class="row justify-content-center align-items-center py-5">
+<div class="row justify-content-center align-items-center py-4 py-md-5">
     <div class="col-md-8 col-lg-6 col-xl-5">
         <div class="card shadow-lg border-0 overflow-hidden">
             <div class="card-body p-4 p-sm-5">
@@ -42,6 +45,13 @@ render_header('Masuk');
                     <h1 class="h4 fw-bold mb-1">Masuk ke Laundry<span class="text-primary-gradient">App</span></h1>
                     <p class="text-muted small mb-0">Kelola operasional laundry dengan cepat, rapi, dan efisien.</p>
                 </div>
+
+                <?php if ($successMessage): ?>
+                    <div class="alert alert-success mb-4 shadow-sm" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <div><?= $successMessage ?></div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($error): ?>
                     <div class="alert alert-danger mb-4 shadow-sm" role="alert">
@@ -58,7 +68,7 @@ render_header('Masuk');
                         </label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input class="form-control" id="username" name="username" placeholder="Masukkan username" autocomplete="username" required>
+                            <input class="form-control" id="username" name="username" placeholder="Masukkan username" value="<?= e($_GET['username'] ?? '') ?>" autocomplete="username" required autofocus>
                         </div>
                     </div>
 
@@ -72,10 +82,17 @@ render_header('Masuk');
                         </div>
                     </div>
 
-                    <button class="btn btn-primary w-100 py-2 fs-6" type="submit">
-                        <i class="bi bi-box-arrow-in-right"></i> Masuk Sekarang
+                    <button class="btn btn-primary w-100 py-2 fs-6 shadow-sm" type="submit">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Sekarang
                     </button>
                 </form>
+
+                <div class="text-center mt-3 pt-3 border-top">
+                    <span class="text-muted small">Belum punya akun?</span>
+                    <a href="<?= e(app_url('register.php')) ?>" class="fw-bold text-primary text-decoration-none small ms-1">
+                        Daftar Akun Baru <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
 
                 <div class="card bg-light border-0 p-3 mt-4">
                     <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-semibold small">

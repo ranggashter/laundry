@@ -109,9 +109,14 @@ render_header('Dashboard Kasir');
                         </span>
                     </td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('kasir/pembayaran.php?id=' . $item['id'])) ?>">
-                            <i class="bi bi-credit-card"></i> Buka Nota
-                        </a>
+                        <div class="btn-group btn-group-sm">
+                            <a class="btn btn-outline-primary" href="<?= e(app_url('kasir/pembayaran.php?id=' . $item['id'])) ?>">
+                                <i class="bi bi-credit-card"></i> Bayar
+                            </a>
+                            <a class="btn btn-outline-secondary" href="<?= e(app_url('kasir/nota.php?id=' . $item['id'])) ?>" title="Cetak Nota">
+                                <i class="bi bi-printer"></i> Nota
+                            </a>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

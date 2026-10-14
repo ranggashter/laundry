@@ -25,9 +25,9 @@ render_header('Dashboard Pelanggan');
         </div>
     </div>
     <div class="d-flex align-items-center gap-2">
-        <span class="badge-soft badge-soft-info px-3 py-2">
-            <i class="bi bi-arrow-clockwise me-1"></i> Auto-refresh 15 detik
-        </span>
+        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.location.reload()" title="Perbarui status pesanan">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
         <a class="btn btn-outline-primary btn-sm" href="<?= e(app_url('pelanggan/riwayat.php')) ?>">
             <i class="bi bi-clock-history"></i> Semua Riwayat
         </a>
@@ -57,7 +57,7 @@ render_header('Dashboard Pelanggan');
             <i class="bi bi-basket text-primary"></i>
             <h2 class="h6 fw-bold mb-0">Pesanan Cucian Terbaru</h2>
         </div>
-        <span class="text-muted small">Status otomatis diperbarui</span>
+        <span class="text-muted small">Daftar cucian terkini</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -122,12 +122,4 @@ render_header('Dashboard Pelanggan');
         </table>
     </div>
 </div>
-<?php if ($transactions): ?>
-<script>
-    // Muat ulang halaman setelah 15 detik agar status terbaru terlihat.
-    setTimeout(function () {
-        window.location.reload();
-    }, 15000);
-</script>
-<?php endif; ?>
 <?php render_footer(); ?>

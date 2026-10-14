@@ -63,6 +63,8 @@ CREATE TABLE pembayaran (
     transaksi_id BIGINT UNSIGNED NOT NULL,
     kasir_id INT UNSIGNED NOT NULL,
     jumlah DECIMAL(12,2) NOT NULL,
+    uang_diterima DECIMAL(12,2) NOT NULL DEFAULT 0,
+    kembalian DECIMAL(12,2) NOT NULL DEFAULT 0,
     jenis ENUM('DP', 'Pelunasan') NOT NULL,
     dibayar_pada DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transaksi_id) REFERENCES transaksi(id) ON DELETE CASCADE,

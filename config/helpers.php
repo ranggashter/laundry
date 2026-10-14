@@ -71,6 +71,19 @@ function require_role(string $role): void
     }
 }
 
+function require_roles(array $roles): void
+{
+    if (empty($_SESSION['user'])) {
+        header('Location: ' . app_url('index.php'));
+        exit;
+    }
+
+    if (!in_array($_SESSION['user']['role'], $roles, true)) {
+        http_response_code(403);
+        exit('Anda tidak memiliki akses ke halaman ini.');
+    }
+}
+
 // Menentukan halaman yang dibuka setelah login berhasil.
 function role_home(string $role): string
 {

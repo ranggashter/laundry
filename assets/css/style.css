@@ -669,21 +669,51 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 /* Print Styles */
 @media print {
-    nav, .no-print, footer, .app-footer, .btn, .btn-action {
+    nav, .no-print, footer, .app-footer, .btn, .btn-action, .navbar {
         display: none !important;
     }
 
     body, main {
         background: #fff !important;
         padding: 0 !important;
+        margin: 0 !important;
     }
 
     body::before {
-        display: none;
+        display: none !important;
     }
 
-    .card {
-        border: none !important;
+    .container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .receipt {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .card, .printable-receipt {
+        border: 1px solid #ddd !important;
         box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0.5rem !important;
+    }
+
+    .badge-soft {
+        border: 1px solid #777 !important;
+        color: #000 !important;
+        background: transparent !important;
+    }
+
+    .table {
+        color: #000 !important;
+    }
+
+    .table th, .table td {
+        border-color: #ddd !important;
     }
 }
