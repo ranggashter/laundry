@@ -173,7 +173,6 @@ render_header('Kelola Layanan');
                         <?php if ($priceError): ?>
                             <div class="invalid-feedback d-block"><?= e($error) ?></div>
                         <?php else: ?>
-                            <div class="form-text small text-muted">Masukkan bilangan bulat dari 1 sampai 9.999.999.999, contoh: <code>7000</code>.</div>
                         <?php endif; ?>
                     </div>
 
