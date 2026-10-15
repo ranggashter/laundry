@@ -35,10 +35,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 render_header('Masuk ke Sistem');
 ?>
 <div class="row justify-content-center align-items-center py-4 py-md-5">
-    <div class="col-md-8 col-lg-6 col-xl-5">
-        <div class="card shadow-lg border-0 overflow-hidden">
-
-    <div class="col-11 col-sm-9 col-md-7 col-lg-5 col-xl-4">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
         <!-- Auth Card -->
         <div class="card shadow-lg border-0 overflow-hidden" style="border-radius: var(--radius-xl);">
             <div class="card-body p-4 p-sm-5">
@@ -55,7 +52,7 @@ render_header('Masuk ke Sistem');
                 <?php if ($successMessage): ?>
                     <div class="alert alert-success mb-4 shadow-sm" role="alert">
                         <i class="bi bi-check-circle-fill fs-5"></i>
-                        <div><?= $successMessage ?></div>
+                        <div><?= e($successMessage) ?></div>
                     </div>
                 <?php endif; ?>
                 <!-- Alert Error -->
@@ -77,10 +74,7 @@ render_header('Masuk ke Sistem');
                         </label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-
                             <input class="form-control" id="username" name="username" placeholder="Masukkan username" value="<?= e($_GET['username'] ?? '') ?>" autocomplete="username" required autofocus>
-                            <input class="form-control" id="username" name="username" placeholder="Masukkan username" autocomplete="username" required autofocus>
-
                         </div>
                     </div>
 
@@ -99,9 +93,7 @@ render_header('Masuk ke Sistem');
                         </div>
                     </div>
 
-                    <button class="btn btn-primary w-100 py-2 fs-6 shadow-sm" type="submit">
                     <button class="btn btn-primary w-100 py-2 fs-6 shadow-sm mb-3" type="submit">
-
                         <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Sekarang
                     </button>
                 </form>
@@ -113,10 +105,6 @@ render_header('Masuk ke Sistem');
                     </a>
                 </div>
 
-                <div class="card bg-light border-0 p-3 mt-4">
-                    <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-semibold small">
-                        <i class="bi bi-info-circle-fill"></i>
-                        <span>Akun Demo Cepat (Password: <code>password</code>)</span>
                 <!-- Demo Account Helper Card -->
                 <div class="card bg-light border-0 p-3 mt-4" style="border-radius: var(--radius-md);">
                     <div class="d-flex align-items-center justify-content-between mb-2">
