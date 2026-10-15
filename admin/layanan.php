@@ -167,10 +167,14 @@ render_header('Kelola Layanan');
                         </label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input class="form-control <?= $priceError ? 'is-invalid' : '' ?>" type="number" id="harga_per_kg" name="harga_per_kg" min="1" step="100" placeholder="7000" value="<?= e($formValues['harga_per_kg']) ?>" required>
+                            <input class="form-control <?= $priceError ? 'is-invalid' : '' ?>" type="number" id="harga_per_kg" name="harga_per_kg" min="1" max="9999999999" step="1" placeholder="7000" value="<?= e($formValues['harga_per_kg']) ?>" required>
                             <span class="input-group-text">/ kg</span>
                         </div>
-                        <div class="form-text small text-muted">Ketik angka saja, contoh: <code>7000</code></div>
+                        <?php if ($priceError): ?>
+                            <div class="invalid-feedback d-block"><?= e($error) ?></div>
+                        <?php else: ?>
+                            <div class="form-text small text-muted">Masukkan bilangan bulat dari 1 sampai 9.999.999.999, contoh: <code>7000</code>.</div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="mb-3">
