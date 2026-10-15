@@ -20,7 +20,7 @@ function getPDO(): PDO
         ];
 
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-    }
+    }   
 
     return $pdo;
 }

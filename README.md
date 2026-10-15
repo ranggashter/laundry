@@ -9,7 +9,8 @@ Contoh aplikasi belajar PHP prosedural, PDO/MySQL, session, dan Bootstrap 5. Tid
 2. Jalankan Apache dan MySQL dari XAMPP.
 3. Buka phpMyAdmin dan impor file `database.sql`. File ini membuat database, tabel, dan data demo.
 4. Jika username atau kata sandi MySQL berbeda, ubah pengaturan di `config/database.php`.
-5. Buka `http://localhost/laundry/`.
+5. Dari folder proyek, jalankan `composer install` untuk memasang pustaka ekspor Excel. Jika PHP CLI tidak mengaktifkan ekstensi GD, gunakan `composer install --ignore-platform-req=ext-gd`; ekspor laporan tidak memakai fitur gambar atau grafik.
+6. Buka `http://localhost/laundry/`.
 
 ## Akun demo
 

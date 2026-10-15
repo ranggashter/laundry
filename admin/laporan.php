@@ -41,6 +41,100 @@ $paymentTotal->execute([$from, $to]);
 $collected = (float) $paymentTotal->fetchColumn();
 $uncollected = max(0, $gross - $collected);
 
+if (($_GET['export'] ?? '') === 'excel') {
+    require_once __DIR__ . '/../vendor/autoload.php';
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Laporan Transaksi');
+    $sheet->mergeCells('A1:I1');
+    $sheet->setCellValue('A1', 'LAPORAN TRANSAKSI & KEUANGAN');
+    $sheet->mergeCells('A2:I2');
+    $sheet->setCellValue('A2', 'Periode: ' . date('d/m/Y', strtotime($from)) . ' s/d ' . date('d/m/Y', strtotime($to)));
+
+    $summary = [
+        ['Jumlah transaksi', count($transactions)],
+        ['Total berat (kg)', $totalWeight],
+        ['Nilai tagihan', $gross],
+        ['Kas masuk', $collected],
+        ['Belum terbayar', $uncollected],
+    ];
+    foreach ($summary as $index => [$label, $value]) {
+        $row = $index + 4;
+        $sheet->setCellValue("A{$row}", $label);
+        $sheet->setCellValue("B{$row}", $value);
+    }
+
+    $headers = ['Kode Nota', 'Waktu Masuk', 'Pelanggan', 'Kasir', 'Berat (kg)', 'Total', 'Dibayar', 'Status Cucian', 'Pembayaran'];
+    foreach ($headers as $index => $header) {
+        $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+        $sheet->setCellValue($column . '10', $header);
+    }
+
+    $textColumn = \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING;
+    foreach ($transactions as $index => $transaction) {
+        $row = $index + 11;
+        $sheet->setCellValueExplicit("A{$row}", (string) $transaction['kode_nota'], $textColumn);
+        $sheet->setCellValue("B{$row}", \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel(new DateTimeImmutable($transaction['dibuat_pada'])));
+        $sheet->setCellValueExplicit("C{$row}", (string) $transaction['nama_pelanggan'], $textColumn);
+        $sheet->setCellValueExplicit("D{$row}", (string) $transaction['nama_kasir'], $textColumn);
+        $sheet->setCellValue("E{$row}", (float) $transaction['berat']);
+        $sheet->setCellValue("F{$row}", (float) $transaction['total']);
+        $sheet->setCellValue("G{$row}", (float) $transaction['dibayar']);
+        $sheet->setCellValueExplicit("H{$row}", (string) $transaction['status_cucian'], $textColumn);
+        $sheet->setCellValueExplicit("I{$row}", (string) $transaction['status_pembayaran'], $textColumn);
+    }
+
+    $lastRow = max(10, count($transactions) + 10);
+    $sheet->getStyle('A1:I1')->applyFromArray([
+        'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 16],
+        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF176B65']],
+        'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+    ]);
+    $sheet->getRowDimension(1)->setRowHeight(30);
+    $sheet->getStyle('A2:I2')->getFont()->setItalic(true)->getColor()->setARGB('FF52616B');
+    $sheet->getStyle('A4:A8')->applyFromArray([
+        'font' => ['bold' => true, 'color' => ['argb' => 'FF344054']],
+        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF0F4F3']],
+    ]);
+    $sheet->getStyle('B4:B8')->getFont()->setBold(true);
+    $sheet->getStyle('B5')->getNumberFormat()->setFormatCode('#,##0.0" kg"');
+    $sheet->getStyle('B6:B8')->getNumberFormat()->setFormatCode('"Rp" #,##0');
+    $sheet->getStyle('A10:I10')->applyFromArray([
+        'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+        'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF176B65']],
+        'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER, 'wrapText' => true],
+    ]);
+    $sheet->getRowDimension(10)->setRowHeight(30);
+    if ($transactions) {
+        $table = new \PhpOffice\PhpSpreadsheet\Worksheet\Table('A10:I' . $lastRow, 'LaporanTransaksi');
+        $tableStyle = new \PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle();
+        $tableStyle->setTheme('TableStyleMedium4')->setShowRowStripes(true);
+        $table->setStyle($tableStyle);
+        $sheet->addTable($table);
+        $sheet->getStyle('B11:B' . $lastRow)->getNumberFormat()->setFormatCode('dd/mm/yyyy hh:mm');
+        $sheet->getStyle('E11:E' . $lastRow)->getNumberFormat()->setFormatCode('#,##0.0" kg"');
+        $sheet->getStyle('F11:G' . $lastRow)->getNumberFormat()->setFormatCode('"Rp" #,##0');
+    } else {
+        $sheet->getAutoFilter()->setRange('A10:I10');
+    }
+
+    foreach (['A' => 19, 'B' => 21, 'C' => 28, 'D' => 24, 'E' => 15, 'F' => 19, 'G' => 19, 'H' => 20, 'I' => 20] as $column => $width) {
+        $sheet->getColumnDimension($column)->setWidth($width);
+    }
+    $sheet->freezePane('A11');
+    $sheet->getPageSetup()->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)->setFitToWidth(1)->setFitToHeight(0);
+    $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(10, 10);
+    $sheet->getPageSetup()->setPrintArea('A1:I' . $lastRow);
+
+    $filename = sprintf('laporan-laundry-%s-%s.xlsx', $from, $to);
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
+    exit;
+}
+
 render_header('Laporan Transaksi');
 ?>
 <!-- Page Header -->
@@ -55,6 +149,9 @@ render_header('Laporan Transaksi');
         </div>
     </div>
     <div class="d-flex align-items-center gap-2 no-print">
+        <a class="btn btn-outline-success" href="<?= e(app_url('admin/laporan.php?' . http_build_query(['dari' => $from, 'sampai' => $to, 'export' => 'excel']))) ?>">
+            <i class="bi bi-file-earmark-spreadsheet-fill"></i> Ekspor Excel
+        </a>
         <button class="btn btn-outline-secondary" type="button" onclick="window.print()">
             <i class="bi bi-printer-fill"></i> Cetak Laporan
         </button>
