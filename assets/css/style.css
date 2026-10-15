@@ -874,6 +874,40 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     border-radius: var(--radius-xl);
 }
 
+.nota-qr {
+    display: flex;
+    width: 72px;
+    height: 72px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+}
+
+.nota-qr canvas,
+.nota-qr img {
+    display: block;
+    width: 64px;
+    height: 64px;
+}
+
+@media (max-width: 575.98px) {
+    .nota-qr {
+        width: 56px;
+        height: 56px;
+        padding: 2px;
+    }
+
+    .nota-qr canvas,
+    .nota-qr img {
+        width: 48px;
+        height: 48px;
+    }
+}
+
 /* QR Code Display Card */
 .qr-card {
     background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%);
@@ -903,6 +937,11 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 
 /* Print Styles */
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+
     nav,
     .navbar,
     .app-sidebar,
@@ -942,6 +981,68 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
         max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+    }
+
+    .print-omit {
+        display: none !important;
+    }
+
+    .receipt .card-body {
+        padding: 0.25rem !important;
+    }
+
+    .receipt .border-bottom.pb-4.mb-4 {
+        padding-bottom: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .receipt .row.g-3.mb-4,
+    .receipt .row.g-2.mb-2 {
+        margin-bottom: 0.25rem !important;
+        padding: 0.25rem !important;
+    }
+
+    .receipt .table-responsive {
+        overflow: visible !important;
+    }
+
+    .receipt .table th,
+    .receipt .table td {
+        padding: 0.25rem !important;
+        font-size: 9pt !important;
+    }
+
+    .receipt .print-qr {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .receipt #transactionQrCode {
+        padding: 0.1rem !important;
+        border: 0 !important;
+    }
+
+    .receipt .nota-qr {
+        width: 58px !important;
+        height: 58px !important;
+        padding: 1px !important;
+    }
+
+    .receipt #transactionQrCode canvas,
+    .receipt #transactionQrCode img {
+        width: 54px !important;
+        height: 54px !important;
+    }
+
+    .receipt .print-qr .small {
+        margin-top: 0.15rem !important;
+        font-size: 8pt !important;
+    }
+
+    .receipt .card,
+    .receipt .row,
+    .receipt .table,
+    .receipt .print-qr {
+        break-inside: avoid;
     }
 
     .card,

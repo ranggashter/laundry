@@ -8,7 +8,7 @@ Contoh aplikasi belajar PHP prosedural, PDO/MySQL, session, dan Bootstrap 5. Tid
 1. Simpan folder proyek di `C:\xampp\htdocs\laundry`.
 2. Jalankan Apache dan MySQL dari XAMPP.
 3. Buka phpMyAdmin dan impor file `database.sql`. File ini membuat database, tabel, dan data demo.
-4. Jika username atau kata sandi MySQL berbeda, ubah pengaturan di `config/database.php`.
+4. Salin `.env.example` menjadi `.env`, lalu sesuaikan `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, dan `DB_PASS` dengan MySQL Anda. File `.env` bersifat lokal dan tidak dikirim ke Git.
 5. Dari folder proyek, jalankan `composer install` untuk memasang pustaka ekspor Excel. Jika PHP CLI tidak mengaktifkan ekstensi GD, gunakan `composer install --ignore-platform-req=ext-gd`; ekspor laporan tidak memakai fitur gambar atau grafik.
 6. Buka `http://localhost/laundry/`.
 
@@ -28,6 +28,7 @@ Kode QR simulasi pelanggan demo adalah `QR-LAUNDRY-001`. Ketik kode ini pada for
 laundry/
 ├── admin/
 │   ├── index.php           # Ringkasan transaksi dan pendapatan
+│   ├── users.php           # Kelola akun dan peran pengguna (admin)
 │   ├── layanan.php         # Tambah, edit, dan hapus layanan
 │   └── laporan.php         # Laporan transaksi berdasarkan tanggal
 ├── assets/
@@ -46,6 +47,7 @@ laundry/
 │   ├── riwayat.php         # Melihat transaksi pelanggan
 │   └── nota.php            # Melihat atau mencetak nota digital
 ├── database.sql            # Struktur tabel dan data awal
+├── .env.example            # Template konfigurasi database
 ├── index.php               # Form login
 └── logout.php              # Mengakhiri sesi login
 ```

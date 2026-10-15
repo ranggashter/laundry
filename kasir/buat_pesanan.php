@@ -91,9 +91,13 @@ render_header('Buat Pesanan Baru');
                         <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
                         <input class="form-control" id="kode-pelanggan" placeholder="Ketik kode, contoh: QR-LAUNDRY-001">
                         <button class="btn btn-primary" type="button" id="scan-pelanggan">
-                            <i class="bi bi-search"></i> Pindai
+                            <i class="bi bi-search"></i> Cari
                         </button>
                     </div>
+                    <button class="btn btn-sm btn-outline-primary mb-2" type="button" id="scan-camera-pelanggan">
+                        <i class="bi bi-camera-video"></i> <span data-scan-label>Scan Kamera</span>
+                    </button>
+                    <div class="mb-2" id="qr-reader-pelanggan" hidden></div>
                     <div class="small text-muted" id="scan-message">
                         Kode demo tersedia: <code role="button" class="text-primary fw-bold" onclick="document.querySelector('#kode-pelanggan').value='QR-LAUNDRY-001'; document.querySelector('#scan-pelanggan').click();">QR-LAUNDRY-001</code> (Klik untuk coba).
                     </div>
@@ -210,4 +214,5 @@ render_header('Buat Pesanan Baru');
         </div>
     </div>
 </form>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <?php render_footer(); ?>

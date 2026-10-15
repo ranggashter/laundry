@@ -297,7 +297,6 @@ render_header('Catat Pembayaran');
                                             </button>
                                         <?php endforeach; ?>
                                     </div>
-                                </div>
 
                                 <!-- Kotak Kalkulasi Real-Time (Kembalian / DP) -->
                                 <div class="card border p-3 mb-3 bg-white shadow-xs" id="calc-preview-box">

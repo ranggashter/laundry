@@ -14,14 +14,25 @@ $query = $pdo->prepare(
 $query->execute([$_SESSION['user']['id']]);
 $transactions = $query->fetchAll();
 
-// Cari pesanan aktif yang belum diambil untuk disorot di tracker
-$activeOrder = null;
-foreach ($transactions as $t) {
-    if ($t['status_cucian'] !== 'Diambil') {
-        $activeOrder = $t;
-        break;
-    }
-}
+$activeCountQuery = $pdo->prepare("SELECT COUNT(*) FROM transaksi WHERE pelanggan_id = ? AND status_cucian <> 'Diambil'");
+$activeCountQuery->execute([$_SESSION['user']['id']]);
+$activeOrderCount = (int) $activeCountQuery->fetchColumn();
+$activePageSize = 2;
+$activePageCount = max(1, (int) ceil($activeOrderCount / $activePageSize));
+$activePage = filter_var($_GET['active_page'] ?? 1, FILTER_VALIDATE_INT);
+$activePage = max(1, min($activePageCount, $activePage === false ? 1 : $activePage));
+$activeOffset = ($activePage - 1) * $activePageSize;
+
+$activeOrdersQuery = $pdo->prepare(
+    "SELECT t.id, t.kode_nota, t.dibuat_pada, t.berat, t.status_cucian, d.nama_layanan
+     FROM transaksi t
+     LEFT JOIN detail_transaksi d ON d.transaksi_id = t.id
+     WHERE t.pelanggan_id = ? AND t.status_cucian <> 'Diambil'
+     ORDER BY t.dibuat_pada DESC
+     LIMIT $activePageSize OFFSET $activeOffset"
+);
+$activeOrdersQuery->execute([$_SESSION['user']['id']]);
+$activeOrders = $activeOrdersQuery->fetchAll();
 
 render_header('Dashboard Pelanggan');
 ?>
@@ -51,7 +62,7 @@ render_header('Dashboard Pelanggan');
     <?php if (!empty($_SESSION['user']['kode_pelanggan'])): ?>
     <div class="col-lg-5">
         <div class="card qr-card h-100 shadow-sm">
-            <div class="card-body p-4 d-flex flex-column justify-content-between">
+            <div class="card-body p-4 d-flex flex-column justify-content-between gap-4">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <span class="badge bg-primary text-white"><i class="bi bi-qr-code me-1"></i> Kartu Digital</span>
@@ -61,14 +72,20 @@ render_header('Dashboard Pelanggan');
                     <p class="text-muted small mb-3">Tunjukkan kode ini kepada kasir saat menitipkan cucian untuk proses penerimaan cepat.</p>
                 </div>
 
-                <div class="p-3 bg-white rounded-3 border d-flex align-items-center justify-content-between shadow-xs">
-                    <div>
-                        <small class="text-muted d-block" style="font-size: 0.68rem; text-transform: uppercase;">Kode Identitas</small>
-                        <span class="fw-bold font-monospace fs-5 text-primary" id="customerQrText"><?= e($_SESSION['user']['kode_pelanggan']) ?></span>
+                <div class="customer-qr-panel d-flex flex-column flex-sm-row align-items-center gap-3 p-4 bg-white rounded-3 border shadow-xs">
+                    <div class="p-2 border rounded-3 bg-white flex-shrink-0">
+                        <div id="customerQrCode" data-qr-code="<?= e($_SESSION['user']['kode_pelanggan']) ?>" role="img" aria-label="QR pelanggan"></div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-copy-target="#customerQrText" title="Salin Kode">
-                        <i class="bi bi-clipboard"></i> Salin
-                    </button>
+                    <div class="text-center text-sm-start flex-grow-1">
+                        <small class="text-muted d-block" style="font-size: 0.68rem; text-transform: uppercase;">Kode Identitas</small>
+                        <span class="fw-bold font-monospace text-primary" id="customerQrText"><?= e($_SESSION['user']['kode_pelanggan']) ?></span>
+                        <button type="button" class="btn btn-sm btn-outline-primary d-block mt-2 mx-auto mx-sm-0" data-copy-target="#customerQrText" title="Salin Kode">
+                            <i class="bi bi-clipboard"></i> Salin Kode
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary d-block mt-2 mx-auto mx-sm-0" data-download-qr="#customerQrCode" data-qr-filename="qr-pelanggan-<?= e($_SESSION['user']['kode_pelanggan']) ?>">
+                            <i class="bi bi-download"></i> Unduh QR
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -85,55 +102,75 @@ render_header('Dashboard Pelanggan');
                     </div>
                     <div>
                         <h2 class="h6 fw-bold mb-0">Status Pengerjaan Terkini</h2>
-                        <small class="text-muted"><?= $activeOrder ? 'Pesanan #' . e($activeOrder['kode_nota']) : 'Tidak ada cucian yang sedang diproses' ?></small>
+                        <small class="text-muted"><?= $activeOrderCount ? $activeOrderCount . ' transaksi belum diambil' : 'Tidak ada cucian yang sedang diproses' ?></small>
                     </div>
                 </div>
-                <?php if ($activeOrder): ?>
-                    <span class="badge-soft <?= e(status_badge_class($activeOrder['status_cucian'])) ?>">
-                        <i class="bi <?= e(status_icon($activeOrder['status_cucian'])) ?>"></i>
-                        <?= e($activeOrder['status_cucian']) ?>
-                    </span>
-                <?php endif; ?>
             </div>
 
-            <div class="card-body p-4 d-flex flex-column justify-content-center">
-                <?php if ($activeOrder): ?>
-                    <?php 
-                        $statusMap = ['Menunggu' => 1, 'Diproses' => 2, 'Selesai' => 3, 'Diambil' => 4];
-                        $currStep = $statusMap[$activeOrder['status_cucian']] ?? 1;
-                    ?>
-                    <div class="laundry-stepper mb-3 px-2">
-                        <div class="stepper-step <?= $currStep > 1 ? 'completed' : ($currStep === 1 ? 'current' : '') ?>">
-                            <div class="stepper-bubble">
-                                <i class="bi <?= $currStep > 1 ? 'bi-check-lg' : 'bi-hourglass-split' ?>"></i>
+            <div class="card-body p-3">
+                <?php if ($activeOrders): ?>
+                    <?php foreach ($activeOrders as $index => $activeOrder): ?>
+                        <?php
+                            $statusMap = ['Menunggu' => 1, 'Diproses' => 2, 'Selesai' => 3, 'Diambil' => 4];
+                            $currStep = $statusMap[$activeOrder['status_cucian']] ?? 1;
+                        ?>
+                        <div class="active-order-item <?= $index > 0 ? 'border-top pt-3 mt-3' : '' ?>">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div>
+                                    <span class="font-monospace fw-bold text-primary"><?= e($activeOrder['kode_nota']) ?></span>
+                                    <div class="small text-muted">
+                                        <?= e($activeOrder['nama_layanan'] ?? 'Reguler') ?> · <?= e($activeOrder['berat']) ?> kg
+                                    </div>
+                                </div>
+                                <span class="badge-soft <?= e(status_badge_class($activeOrder['status_cucian'])) ?>">
+                                    <i class="bi <?= e(status_icon($activeOrder['status_cucian'])) ?>"></i>
+                                    <?= e($activeOrder['status_cucian']) ?>
+                                </span>
                             </div>
-                            <span class="stepper-label">Menunggu</span>
-                        </div>
-                        <div class="stepper-step <?= $currStep > 2 ? 'completed' : ($currStep === 2 ? 'current' : '') ?>">
-                            <div class="stepper-bubble">
-                                <i class="bi <?= $currStep > 2 ? 'bi-check-lg' : 'bi-arrow-repeat' ?>"></i>
+                            <div class="laundry-stepper mb-2 px-2">
+                                <div class="stepper-step <?= $currStep > 1 ? 'completed' : ($currStep === 1 ? 'current' : '') ?>">
+                                    <div class="stepper-bubble"><i class="bi <?= $currStep > 1 ? 'bi-check-lg' : 'bi-hourglass-split' ?>"></i></div>
+                                    <span class="stepper-label">Menunggu</span>
+                                </div>
+                                <div class="stepper-step <?= $currStep > 2 ? 'completed' : ($currStep === 2 ? 'current' : '') ?>">
+                                    <div class="stepper-bubble"><i class="bi <?= $currStep > 2 ? 'bi-check-lg' : 'bi-arrow-repeat' ?>"></i></div>
+                                    <span class="stepper-label">Diproses</span>
+                                </div>
+                                <div class="stepper-step <?= $currStep > 3 ? 'completed' : ($currStep === 3 ? 'current' : '') ?>">
+                                    <div class="stepper-bubble"><i class="bi <?= $currStep > 3 ? 'bi-check-lg' : 'bi-sparkles' ?>"></i></div>
+                                    <span class="stepper-label">Selesai</span>
+                                </div>
+                                <div class="stepper-step <?= $currStep >= 4 ? 'completed' : '' ?>">
+                                    <div class="stepper-bubble"><i class="bi bi-bag-check"></i></div>
+                                    <span class="stepper-label">Diambil</span>
+                                </div>
                             </div>
-                            <span class="stepper-label">Diproses</span>
-                        </div>
-                        <div class="stepper-step <?= $currStep > 3 ? 'completed' : ($currStep === 3 ? 'current' : '') ?>">
-                            <div class="stepper-bubble">
-                                <i class="bi <?= $currStep > 3 ? 'bi-check-lg' : 'bi-sparkles' ?>"></i>
+                            <div class="text-end">
+                                <a href="<?= e(app_url('pelanggan/nota.php?id=' . $activeOrder['id'])) ?>" class="btn btn-sm btn-outline-primary py-1">
+                                    <i class="bi bi-receipt"></i> Buka Nota
+                                </a>
                             </div>
-                            <span class="stepper-label">Selesai</span>
                         </div>
-                        <div class="stepper-step <?= $currStep >= 4 ? 'completed' : '' ?>">
-                            <div class="stepper-bubble">
-                                <i class="bi bi-bag-check"></i>
-                            </div>
-                            <span class="stepper-label">Diambil</span>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top text-muted small">
-                        <span>Paket: <strong><?= e($activeOrder['nama_layanan'] ?? 'Reguler') ?></strong> (<?= e($activeOrder['berat']) ?> kg)</span>
-                        <a href="<?= e(app_url('pelanggan/nota.php?id=' . $activeOrder['id'])) ?>" class="btn btn-sm btn-outline-primary py-1">
-                            <i class="bi bi-receipt"></i> Buka Nota
-                        </a>
-                    </div>
+                    <?php endforeach; ?>
+                    <?php if ($activePageCount > 1): ?>
+                        <nav class="d-flex justify-content-between align-items-center border-top mt-3 pt-3" aria-label="Halaman status pengerjaan">
+                            <?php if ($activePage > 1): ?>
+                                <a class="btn btn-sm btn-outline-secondary" href="<?= e(app_url('pelanggan/index.php?active_page=' . ($activePage - 1))) ?>">
+                                    <i class="bi bi-chevron-left"></i> Sebelumnya
+                                </a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                            <span class="small text-muted">Halaman <?= $activePage ?> dari <?= $activePageCount ?></span>
+                            <?php if ($activePage < $activePageCount): ?>
+                                <a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('pelanggan/index.php?active_page=' . ($activePage + 1))) ?>">
+                                    Berikutnya <i class="bi bi-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                        </nav>
+                    <?php endif; ?>
                 <?php else: ?>
                     <div class="text-center py-3">
                         <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
@@ -235,6 +272,7 @@ render_header('Dashboard Pelanggan');
         </table>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <?php if ($transactions): ?>
 <script>
     // Muat ulang halaman setelah 15 detik agar status terbaru terlihat.

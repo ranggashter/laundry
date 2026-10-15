@@ -3,6 +3,45 @@ require_once __DIR__ . '/../config/helpers.php';
 require_once __DIR__ . '/../config/database.php';
 require_role('kasir');
 $pdo = getPDO();
+$trackingInput = $_GET['kode'] ?? '';
+$trackingCode = is_string($trackingInput) ? strtoupper(trim($trackingInput)) : '';
+$trackedCustomer = null;
+$trackedTransactions = [];
+$trackingError = '';
+
+if ($trackingCode !== '') {
+    if (str_starts_with($trackingCode, 'NOTA:')) {
+        $noteCode = substr($trackingCode, 5);
+        if (strlen($noteCode) > 40 || !preg_match('/^[A-Z0-9_-]+$/', $noteCode)) {
+            $trackingError = 'Format kode nota tidak valid.';
+        } else {
+            $noteQuery = $pdo->prepare('SELECT id FROM transaksi WHERE kode_nota = ? LIMIT 1');
+            $noteQuery->execute([$noteCode]);
+            $transactionId = $noteQuery->fetchColumn();
+            if ($transactionId) {
+                redirect('kasir/nota.php?id=' . (int) $transactionId);
+            }
+            $trackingError = 'Transaksi dengan kode nota tersebut tidak ditemukan.';
+        }
+    } elseif (strlen($trackingCode) > 40 || !preg_match('/^[A-Z0-9_-]+$/', $trackingCode)) {
+        $trackingError = 'Format kode pelanggan tidak valid.';
+    } else {
+        $customerQuery = $pdo->prepare("SELECT id, nama, kode_pelanggan FROM users WHERE role = 'pelanggan' AND kode_pelanggan = ? LIMIT 1");
+        $customerQuery->execute([$trackingCode]);
+        $trackedCustomer = $customerQuery->fetch() ?: null;
+
+        if ($trackedCustomer) {
+            $transactionQuery = $pdo->prepare(
+                'SELECT id, kode_nota, dibuat_pada, berat, total, dibayar, status_cucian, status_pembayaran
+                 FROM transaksi WHERE pelanggan_id = ? ORDER BY dibuat_pada DESC LIMIT 50'
+            );
+            $transactionQuery->execute([$trackedCustomer['id']]);
+            $trackedTransactions = $transactionQuery->fetchAll();
+        } else {
+            $trackingError = 'Kode tidak ditemukan. Pastikan QR berasal dari akun pelanggan aktif.';
+        }
+    }
+}
 
 // Hitung cucian di setiap tahap antrean
 $summary = [
@@ -29,6 +68,9 @@ render_header('Dashboard Kasir');
         <p class="text-muted mb-0 small">Halo, <strong><?= e($_SESSION['user']['nama']) ?></strong>! Kelola antrean cucian dan transaksi pelanggan.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary" type="button" onclick="window.location.reload()" title="Perbarui data dashboard">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
         <a class="btn btn-primary" href="<?= e(app_url('kasir/buat_pesanan.php')) ?>">
             <i class="bi bi-plus-circle-fill"></i> Buat Pesanan Baru
         </a>
@@ -115,6 +157,83 @@ render_header('Dashboard Kasir');
         </div>
     </div>
 </div>
+
+<!-- Customer QR Transaction Tracker -->
+<section class="card shadow-sm mb-4" aria-labelledby="tracking-title">
+    <div class="card-header-clean">
+        <div class="d-flex align-items-center gap-2">
+            <div class="icon-box bg-primary-subtle text-primary"><i class="bi bi-qr-code-scan"></i></div>
+            <div>
+                <h2 class="h6 fw-bold mb-0" id="tracking-title">Lacak Transaksi Pelanggan</h2>
+                <small class="text-muted">Scan QR pelanggan atau masukkan kode identitasnya</small>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        <form class="row g-2 align-items-start" id="tracking-form" method="get" action="<?= e(app_url('kasir/index.php')) ?>">
+            <div class="col-12 col-md">
+                <label class="visually-hidden" for="tracking-code">Kode QR pelanggan atau nota</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                    <input class="form-control" id="tracking-code" name="kode" value="<?= e($trackingCode) ?>" placeholder="Kode pelanggan atau NOTA:TRX-..." maxlength="64" autocomplete="off">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Lacak</button>
+                </div>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button class="btn btn-outline-primary" type="button" id="scan-camera-tracking">
+                    <i class="bi bi-camera-video"></i> <span data-scan-label>Scan Kamera</span>
+                </button>
+            </div>
+            <div class="col-12">
+                <div id="qr-reader-tracking" class="mb-2" hidden></div>
+                <div class="small text-muted" id="tracking-scan-message">Scan QR pelanggan untuk melihat riwayat atau QR nota untuk membuka transaksinya.</div>
+            </div>
+        </form>
+
+        <?php if ($trackingCode !== ''): ?>
+        <div class="border-top mt-4 pt-4">
+            <?php if ($trackingError): ?>
+                <div class="alert alert-warning mb-0" role="status"><i class="bi bi-exclamation-circle me-2"></i><?= e($trackingError) ?></div>
+            <?php else: ?>
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
+                    <div>
+                        <h3 class="h6 fw-bold mb-1"><?= e($trackedCustomer['nama']) ?></h3>
+                        <span class="font-monospace small text-muted"><?= e($trackedCustomer['kode_pelanggan']) ?></span>
+                    </div>
+                    <span class="badge-soft badge-soft-primary"><?= count($trackedTransactions) ?> transaksi ditemukan</span>
+                </div>
+                <?php if ($trackedTransactions): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr><th>Kode Nota</th><th>Tanggal</th><th>Berat</th><th>Total</th><th>Cucian</th><th>Pembayaran</th><th class="text-end">Aksi</th></tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($trackedTransactions as $transaction): ?>
+                            <tr>
+                                <td class="font-monospace fw-semibold text-primary"><?= e($transaction['kode_nota']) ?></td>
+                                <td class="text-nowrap"><?= e(date('d/m/Y H:i', strtotime($transaction['dibuat_pada']))) ?></td>
+                                <td><?= e($transaction['berat']) ?> kg</td>
+                                <td class="text-nowrap"><?= e(rupiah($transaction['total'])) ?></td>
+                                <td><span class="badge-soft <?= e(status_badge_class($transaction['status_cucian'])) ?>"><?= e($transaction['status_cucian']) ?></span></td>
+                                <td><span class="badge-soft <?= e(status_badge_class($transaction['status_pembayaran'])) ?>"><?= e($transaction['status_pembayaran']) ?></span></td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-primary" href="<?= e(app_url('kasir/nota.php?id=' . $transaction['id'])) ?>" title="Lihat nota"><i class="bi bi-receipt"></i></a>
+                                    <a class="btn btn-sm btn-outline-success" href="<?= e(app_url('kasir/pembayaran.php?id=' . $transaction['id'])) ?>" title="Catat pembayaran"><i class="bi bi-cash"></i></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php else: ?>
+                    <div class="text-muted small">Pelanggan ini belum memiliki transaksi.</div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</section>
 
 <!-- Recent Transactions Table -->
 <div class="card shadow-sm">
@@ -209,4 +328,5 @@ render_header('Dashboard Kasir');
         </table>
     </div>
 </div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <?php render_footer(); ?>

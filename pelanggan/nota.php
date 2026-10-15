@@ -46,7 +46,7 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
 ?>
 <div class="receipt">
     <!-- Action Bar (Hidden on Print) -->
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print flex-wrap gap-2">
         <a class="btn btn-outline-secondary" href="<?= e(app_url('pelanggan/riwayat.php')) ?>">
             <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
         </a>
@@ -58,22 +58,22 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
     </div>
 
     <!-- Official Laundry Receipt Card -->
-    <div class="card shadow-md border-0 overflow-hidden mb-5">
-        <div class="card-body p-4 p-md-5">
+    <div class="card shadow-md border-0 overflow-hidden mb-3">
+        <div class="card-body p-3 p-md-4">
             <!-- Brand Header -->
-            <div class="text-center border-bottom pb-4 mb-4">
-                <div class="brand-badge mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.4rem;">
+            <div class="text-center border-bottom pb-2 mb-2">
+                <div class="brand-badge mx-auto mb-1" style="width: 40px; height: 40px; font-size: 1.2rem;">
                     <i class="bi bi-droplet-half"></i>
                 </div>
                 <h1 class="h4 fw-bold text-heading mb-1">Laundry<span class="text-primary-gradient">App</span> Express</h1>
                 <p class="text-muted small mb-2">Layanan Cuci & Setrika Bersih, Wangi, Higienis, dan Rapi</p>
-                <div class="d-inline-block badge-soft badge-soft-primary px-3 py-2 font-monospace fs-6">
+                <div class="d-inline-block badge-soft badge-soft-primary px-2 py-1 font-monospace">
                     <i class="bi bi-receipt me-1"></i> <?= e($transaction['kode_nota']) ?>
                 </div>
             </div>
 
             <!-- Customer & Transaction Info -->
-            <div class="row g-3 mb-4">
+            <div class="row g-2 mb-2">
                 <div class="col-sm-6">
                     <small class="text-muted d-block" style="font-size: 0.72rem; text-transform: uppercase;">Ditujukan Kepada:</small>
                     <div class="fw-bold text-heading fs-6"><?= e($transaction['nama_pelanggan']) ?></div>
@@ -89,7 +89,7 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
             </div>
 
             <!-- Services Detail Table -->
-            <div class="table-responsive mb-4 border rounded-3">
+            <div class="table-responsive mb-2 border rounded-3">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -113,18 +113,24 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
             </div>
 
             <!-- Calculation Summary -->
-            <div class="row justify-content-end mb-4">
-                <div class="col-md-6 col-sm-8">
-                    <div class="p-3 bg-light rounded-3">
-                        <div class="d-flex justify-content-between py-1 text-muted small">
+            <div class="row align-items-center g-2 mb-2">
+                <div class="col-3 print-qr">
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
+                        <div id="transactionQrCode" class="nota-qr" data-qr-code="<?= e('NOTA:' . $transaction['kode_nota']) ?>" role="img" aria-label="QR kode nota"></div>
+                        <div class="small text-muted">QR nota<br><span class="font-monospace fw-semibold"><?= e($transaction['kode_nota']) ?></span></div>
+                    </div>
+                </div>
+                <div class="col-9">
+                    <div class="p-2 bg-light rounded-3">
+                        <div class="d-flex justify-content-between py-0 text-muted small">
                             <span>Total Biaya:</span>
                             <strong class="text-heading"><?= e(rupiah($transaction['total'])) ?></strong>
                         </div>
-                        <div class="d-flex justify-content-between py-1 text-muted small">
+                        <div class="d-flex justify-content-between py-0 text-muted small">
                             <span>Telah Dibayar:</span>
                             <span class="text-success fw-semibold"><?= e(rupiah($transaction['dibayar'])) ?></span>
                         </div>
-                        <div class="d-flex justify-content-between py-2 border-top mt-1 pt-2">
+                        <div class="d-flex justify-content-between py-1 border-top mt-1 pt-1">
                             <span class="fw-bold text-heading">Sisa Tagihan:</span>
                             <strong class="<?= $remaining > 0 ? 'text-danger' : 'text-success' ?> fs-6">
                                 <?= $remaining > 0 ? e(rupiah($remaining)) : 'LUNAS' ?>
@@ -135,7 +141,7 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
             </div>
 
             <!-- Status Indicator Tiles -->
-            <div class="row g-3 mb-4 p-3 border rounded-3 bg-white">
+            <div class="row g-2 mb-2 p-2 border rounded-3 bg-white">
                 <div class="col-sm-6">
                     <span class="text-muted small d-block mb-1">Status Pengerjaan Cucian:</span>
                     <span class="badge-soft <?= e(status_badge_class($transaction['status_cucian'])) ?>">
@@ -151,13 +157,13 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
             </div>
 
             <!-- Payment Logs -->
-            <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+            <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2 print-omit">
                 <i class="bi bi-clock-history text-muted"></i> Catatan Pembayaran Masuk
             </h2>
             <?php if (!$payments): ?>
-                <p class="text-muted small mb-0">Belum ada pembayaran yang tercatat.</p>
+                <p class="text-muted small mb-0 print-omit">Belum ada pembayaran yang tercatat.</p>
             <?php else: ?>
-                <div class="list-group list-group-flush border rounded-3 mb-4">
+                <div class="list-group list-group-flush border rounded-3 mb-4 print-omit">
                     <?php foreach ($payments as $payment): ?>
                         <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 small">
                             <div>
@@ -179,7 +185,7 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
             <?php endif; ?>
 
             <!-- Terms & Footer -->
-            <div class="text-center text-muted small mt-4 pt-3 border-top">
+            <div class="text-center text-muted small mt-4 pt-3 border-top print-omit">
                 <p class="mb-1">Harap membawa bukti nota ini saat mengambil pakaian. Komplain maksimal 1×24 jam setelah cucian diambil.</p>
                 <div class="fw-semibold text-heading">
                     <i class="bi bi-heart-fill text-danger me-1"></i> Terima kasih telah mempercayakan pakaian Anda kepada LaundryApp!
@@ -188,4 +194,5 @@ render_header('Nota Digital · ' . $transaction['kode_nota']);
         </div>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <?php render_footer(); ?>

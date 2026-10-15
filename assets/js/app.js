@@ -1,5 +1,37 @@
 // assets/js/app.js - Modern Frontend Interactivity for LaundryApp
 document.addEventListener('DOMContentLoaded', function () {
+    const customerQrCode = document.querySelector('#customerQrCode');
+    const transactionQrCode = document.querySelector('#transactionQrCode');
+    if (window.QRCode) {
+        [customerQrCode, transactionQrCode].filter(Boolean).forEach(function (qrElement) {
+            new QRCode(qrElement, {
+                text: qrElement.dataset.qrCode,
+                width: qrElement === customerQrCode ? 176 : 144,
+                height: qrElement === customerQrCode ? 176 : 144,
+                colorDark: '#172033',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        });
+    }
+
+    document.querySelectorAll('[data-download-qr]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const qrElement = document.querySelector(button.dataset.downloadQr);
+            const canvas = qrElement && qrElement.querySelector('canvas');
+            const image = qrElement && qrElement.querySelector('img');
+            const imageUrl = canvas ? canvas.toDataURL('image/png') : (image ? image.src : '');
+            if (!imageUrl) {
+                return;
+            }
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imageUrl;
+            downloadLink.download = (button.dataset.qrFilename || 'qr-code') + '.png';
+            downloadLink.click();
+        });
+    });
+
     // ---------------------------------------------------------
     // 1. Password Visibility Toggle on Login Page
     // ---------------------------------------------------------
@@ -173,7 +205,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const code = codeInput.value.trim().toUpperCase();
         if (!code) {
-            scanMessage.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Ketik kode QR pelanggan terlebih dahulu.</span>';
+            scanMessage.className = 'small text-warning';
+            scanMessage.textContent = 'Ketik atau scan kode QR pelanggan terlebih dahulu.';
             return;
         }
 
@@ -188,9 +221,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (match) {
             customerSelect.value = match.value;
-            scanMessage.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Pelanggan ditemukan: <strong>${match.text}</strong></span>`;
+            scanMessage.className = 'small text-success fw-semibold';
+            scanMessage.textContent = 'Pelanggan ditemukan: ' + match.text;
         } else {
-            scanMessage.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Kode QR tidak ditemukan di daftar pelanggan aktif.</span>';
+            scanMessage.className = 'small text-danger';
+            scanMessage.textContent = 'Kode QR tidak ditemukan di daftar pelanggan.';
         }
     }
 
@@ -205,6 +240,91 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    function attachQrCamera(buttonSelector, readerSelector, input, message, onScan) {
+        const button = document.querySelector(buttonSelector);
+        const reader = document.querySelector(readerSelector);
+        if (!button || !reader || !input) {
+            return;
+        }
+
+        const label = button.querySelector('[data-scan-label]');
+        let scanner = null;
+        let scanning = false;
+
+        button.addEventListener('click', async function () {
+            if (scanning) {
+                scanning = false;
+                try {
+                    await scanner.stop();
+                    await scanner.clear();
+                } catch (error) {
+                    // Kamera mungkin sudah berhenti setelah hasil scan ditemukan.
+                }
+                reader.hidden = true;
+                button.disabled = false;
+                if (label) label.textContent = 'Scan Kamera';
+                return;
+            }
+
+            if (!window.Html5Qrcode) {
+                if (message) message.textContent = 'Pemindai kamera gagal dimuat. Masukkan kode secara manual.';
+                return;
+            }
+
+            button.disabled = true;
+            reader.hidden = false;
+            if (message) message.textContent = 'Meminta izin kamera...';
+
+            try {
+                scanner = new Html5Qrcode(reader.id);
+                await scanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
+                    async function (decodedText) {
+                        if (!scanning) return;
+                        scanning = false;
+                        input.value = decodedText.trim();
+                        try {
+                            await scanner.stop();
+                            await scanner.clear();
+                        } catch (error) {
+                            // Lanjutkan dengan hasil scan walau kamera gagal berhenti.
+                        }
+                        reader.hidden = true;
+                        button.disabled = false;
+                        if (label) label.textContent = 'Scan Kamera';
+                        onScan(decodedText.trim());
+                    },
+                    function () {}
+                );
+                scanning = true;
+                button.disabled = false;
+                if (label) label.textContent = 'Tutup Kamera';
+                if (message) message.textContent = 'Arahkan kamera ke QR pelanggan atau nota.';
+            } catch (error) {
+                scanning = false;
+                reader.hidden = true;
+                button.disabled = false;
+                if (label) label.textContent = 'Scan Kamera';
+                if (message) message.textContent = 'Kamera tidak dapat dibuka. Izinkan akses kamera atau masukkan kode manual.';
+            }
+        });
+    }
+
+    attachQrCamera('#scan-camera-pelanggan', '#qr-reader-pelanggan', codeInput, scanMessage, triggerScanMatch);
+
+    const trackingInput = document.querySelector('#tracking-code');
+    const trackingForm = document.querySelector('#tracking-form');
+    attachQrCamera(
+        '#scan-camera-tracking',
+        '#qr-reader-tracking',
+        trackingInput,
+        document.querySelector('#tracking-scan-message'),
+        function () {
+            if (trackingForm) trackingForm.requestSubmit();
+        }
+    );
 
     // ---------------------------------------------------------
     // 6. Quick Pay Presets on Cashier Payment (kasir/pembayaran.php)

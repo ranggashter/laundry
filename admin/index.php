@@ -34,6 +34,9 @@ render_header('Dashboard Admin');
         <p class="text-muted mb-0 small">Selamat datang kembali, <strong><?= e($_SESSION['user']['nama']) ?></strong>! Berikut rekapitulasi operasional laundry.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary" type="button" onclick="window.location.reload()" title="Perbarui data dashboard">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
         <a class="btn btn-outline-primary" href="<?= e(app_url('admin/laporan.php')) ?>">
             <i class="bi bi-bar-chart-line-fill"></i> Laporan Keuangan
         </a>

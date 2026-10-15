@@ -151,6 +151,8 @@ function render_header(string $title): void
     $user = $_SESSION['user'] ?? null;
     $role = $user['role'] ?? '';
     $currentScript = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+    $profileFeedback = $_SESSION['profile_feedback'] ?? null;
+    unset($_SESSION['profile_feedback']);
 
     // Struktur menu sidebar terorganisir per peran pengguna
     $menus = [
@@ -160,6 +162,7 @@ function render_header(string $title): void
                 ['Dashboard', 'admin/index.php', 'bi-grid-1x2-fill'],
                 ['Kelola Layanan', 'admin/layanan.php', 'bi-tags-fill'],
                 ['Laporan Keuangan', 'admin/laporan.php', 'bi-bar-chart-line-fill'],
+                ['Kelola User', 'admin/users.php', 'bi-people-fill'],
             ],
         ],
         'kasir' => [
@@ -186,6 +189,7 @@ function render_header(string $title): void
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= e($title) ?> · LaundryApp Modern</title>
+        <link rel="icon" type="image/svg+xml" href="<?= e(app_url('assets/favicon.svg')) ?>">
         
         <!-- Fonts & Icons -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -299,6 +303,11 @@ function render_header(string $title): void
 
             <!-- Page Main Body -->
             <main class="app-content container-fluid px-3 px-md-4">
+    <?php if ($profileFeedback): ?>
+                <div class="alert alert-<?= e($profileFeedback['type']) ?> shadow-sm" role="status">
+                    <?= e($profileFeedback['message']) ?>
+                </div>
+    <?php endif; ?>
     <?php else: ?>
     <!-- Public / Auth Layout for Logged Out User -->
     <div class="d-flex flex-column min-vh-100 justify-content-between">
@@ -375,10 +384,39 @@ function render_footer(): void
                         </div>
                         <?php endif; ?>
                     </div>
-                    <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0">
+                    <!-- <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0">
                         <i class="bi bi-info-circle-fill fs-5 text-info"></i>
                         <div>Anda masuk sebagai <strong><?= e(role_label($role)) ?></strong> dengan izin operasional aktif.</div>
-                    </div>
+                    </div> -->
+                    <form class="mt-4" method="post" action="<?= e(app_url('profile.php')) ?>" autocomplete="off">
+                        <?= csrf_field() ?>
+                        <div class="mb-3">
+                            <label class="form-label" for="profile-username">Username</label>
+                            <input class="form-control" id="profile-username" name="username" value="<?= e($user['username']) ?>" minlength="3" maxlength="30" pattern="[a-z0-9_]+" autocomplete="username" required>
+                            <div class="form-text">3-30 karakter: huruf kecil, angka, atau garis bawah.</div>
+                        </div>
+                        <?php if ($role === 'admin'): ?>
+                        <div class="border-top pt-3 mt-3">
+                            <p class="small fw-semibold text-heading mb-3">Keamanan Administrator</p>
+                            <div class="mb-3">
+                                <label class="form-label" for="profile-current-password">Password lama</label>
+                                <input class="form-control" type="password" id="profile-current-password" name="current_password" autocomplete="current-password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="profile-new-password">Password baru <span class="text-muted fw-normal">(opsional)</span></label>
+                                <input class="form-control" type="password" id="profile-new-password" name="new_password" minlength="6" autocomplete="new-password">
+                                <div class="form-text">Kosongkan jika hanya mengganti username.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="profile-password-confirm">Konfirmasi password baru</label>
+                                <input class="form-control" type="password" id="profile-password-confirm" name="password_confirm" minlength="6" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        <div class="d-flex justify-content-end">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-1"></i> Simpan Profil</button>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer border-0 p-3 bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -403,7 +441,7 @@ function render_footer(): void
     <!-- Bootstrap 5 Bundle JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <!-- App Interactive JS -->
-    <script src="<?= e(app_url('assets/js/app.js')) ?>"></script>
+    <script src="<?= e(app_url('assets/js/app.js?v=' . filemtime(__DIR__ . '/../assets/js/app.js'))) ?>"></script>
     </body>
     </html>
     <?php
