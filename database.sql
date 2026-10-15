@@ -81,3 +81,12 @@ INSERT INTO users (nama, username, password, role, kode_pelanggan) VALUES
 INSERT INTO layanan (nama, jenis, harga_per_kg, durasi_jam) VALUES
 ('Cuci Reguler', 'Reguler', 7000, 48),
 ('Cuci Express', 'Express', 12000, 8);
+-- Akun demo menggunakan kata sandi "password". Ganti setelah instalasi.
+INSERT INTO users (nama, username, password, role, kode_pelanggan) VALUES
+('Administrator', 'admin', '$2y$10$iJhWy4jH9sQCAZgX.GsQH.xT3aK/asNpSW/rF.iKNXemu1/QvdVtW', 'admin', NULL),
+('Kasir Utama', 'kasir', '$2y$10$iJhWy4jH9sQCAZgX.GsQH.xT3aK/asNpSW/rF.iKNXemu1/QvdVtW', 'kasir', NULL),
+('Pelanggan Demo', 'pelanggan', '$2y$10$iJhWy4jH9sQCAZgX.GsQH.xT3aK/asNpSW/rF.iKNXemu1/QvdVtW', 'pelanggan', 'QR-LAUNDRY-001');
+
+INSERT INTO layanan (nama, jenis, harga_per_kg, durasi_jam) VALUES
+('Cuci Reguler', 'Reguler', 7000, 48),
+('Cuci Express', 'Express', 12000, 8);

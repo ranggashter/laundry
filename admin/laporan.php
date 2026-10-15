@@ -15,6 +15,7 @@ if (!$validDate($from) || !$validDate($to) || $from > $to) {
     $from = date('Y-m-01');
     $to = date('Y-m-d');
 }
+
 // Ambil transaksi hanya dalam rentang tanggal yang diminta.
 $statement = $pdo->prepare(
     "SELECT t.id, t.kode_nota, t.dibuat_pada, t.berat, t.total, t.dibayar, t.status_pembayaran, t.status_cucian,
@@ -27,7 +28,10 @@ $statement = $pdo->prepare(
 );
 $statement->execute([$from, $to]);
 $transactions = $statement->fetchAll();
+
 $gross = array_sum(array_column($transactions, 'total'));
+$totalWeight = array_sum(array_column($transactions, 'berat'));
+
 // Pembayaran dihitung dari tanggal uang diterima, bukan tanggal pesanan dibuat.
 $paymentTotal = $pdo->prepare(
     'SELECT COALESCE(SUM(jumlah), 0) FROM pembayaran
@@ -35,111 +39,149 @@ $paymentTotal = $pdo->prepare(
 );
 $paymentTotal->execute([$from, $to]);
 $collected = (float) $paymentTotal->fetchColumn();
+$uncollected = max(0, $gross - $collected);
+
 render_header('Laporan Transaksi');
 ?>
+<!-- Page Header -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div class="d-flex align-items-center gap-3">
         <div class="stat-icon sky shadow-sm">
             <i class="bi bi-bar-chart-line-fill"></i>
         </div>
         <div>
-            <h1 class="h3 mb-0">Laporan Transaksi</h1>
+            <h1 class="h3 mb-0 fw-bold text-heading">Laporan Transaksi & Keuangan</h1>
             <p class="text-muted mb-0 small">Rekapitulasi riwayat pesanan laundry dan arus kas masuk.</p>
         </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <span class="badge-soft badge-soft-info px-3 py-2">
-            <i class="bi bi-calendar-range me-1"></i> <?= date('d M Y', strtotime($from)) ?> — <?= date('d M Y', strtotime($to)) ?>
-        </span>
+    <div class="d-flex align-items-center gap-2 no-print">
+        <button class="btn btn-outline-secondary" type="button" onclick="window.print()">
+            <i class="bi bi-printer-fill"></i> Cetak Laporan
+        </button>
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
+<!-- Filter Bar -->
+<div class="card shadow-sm mb-4 no-print">
     <div class="card-body p-4">
         <form class="row gy-3 gx-3 align-items-end" method="get">
-            <div class="col-sm-4">
+            <div class="col-md-4 col-sm-6">
                 <label class="form-label" for="dari">
                     <i class="bi bi-calendar-event text-muted"></i> Dari Tanggal
                 </label>
                 <input class="form-control" type="date" id="dari" name="dari" value="<?= e($from) ?>" required>
             </div>
-            <div class="col-sm-4">
+            <div class="col-md-4 col-sm-6">
                 <label class="form-label" for="sampai">
                     <i class="bi bi-calendar-event text-muted"></i> Sampai Tanggal
                 </label>
                 <input class="form-control" type="date" id="sampai" name="sampai" value="<?= e($to) ?>" required>
             </div>
-            <div class="col-sm-4">
-                <button class="btn btn-primary w-100" type="submit">
-                    <i class="bi bi-filter"></i> Tampilkan Laporan
+            <div class="col-md-4 col-sm-12 d-flex gap-2">
+                <button class="btn btn-primary flex-fill" type="submit">
+                    <i class="bi bi-funnel-fill"></i> Filter Data
                 </button>
+                <a class="btn btn-outline-secondary" href="<?= e(app_url('admin/laporan.php?dari=' . date('Y-m-01') . '&sampai=' . date('Y-m-d'))) ?>" title="Reset Bulan Ini">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
             </div>
         </form>
     </div>
 </div>
 
+<!-- Metric Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card h-100">
-            <div class="card-body p-4 d-flex align-items-center gap-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card stat-indigo h-100">
+            <div class="d-flex align-items-center gap-3">
                 <div class="stat-icon indigo">
                     <i class="bi bi-receipt"></i>
                 </div>
                 <div>
                     <div class="text-muted small fw-semibold">Jumlah Transaksi</div>
-                    <div class="h2 mb-0 fw-bold text-heading"><?= count($transactions) ?></div>
+                    <div class="h3 mb-0 fw-bold text-heading"><?= count($transactions) ?></div>
+                    <div class="text-muted small" style="font-size: 0.72rem;">Total berat: <?= number_format($totalWeight, 1) ?> kg</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card h-100">
-            <div class="card-body p-4 d-flex align-items-center gap-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card stat-sky h-100">
+            <div class="d-flex align-items-center gap-3">
                 <div class="stat-icon sky">
-                    <i class="bi bi-calculator"></i>
+                    <i class="bi bi-cash-stack"></i>
                 </div>
                 <div>
-                    <div class="text-muted small fw-semibold">Nilai Total Transaksi</div>
-                    <div class="h3 mb-0 fw-bold text-heading"><?= e(rupiah($gross)) ?></div>
+                    <div class="text-muted small fw-semibold">Nilai Tagihan</div>
+                    <div class="h4 mb-0 fw-bold text-heading"><?= e(rupiah($gross)) ?></div>
+                    <div class="text-info small fw-semibold" style="font-size: 0.72rem;">Total nilai kotor</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card h-100">
-            <div class="card-body p-4 d-flex align-items-center gap-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card stat-emerald h-100">
+            <div class="d-flex align-items-center gap-3">
                 <div class="stat-icon emerald">
-                    <i class="bi bi-cash-coin"></i>
+                    <i class="bi bi-wallet2"></i>
                 </div>
                 <div>
-                    <div class="text-muted small fw-semibold">Pembayaran Diterima</div>
-                    <div class="h3 mb-0 fw-bold text-heading"><?= e(rupiah($collected)) ?></div>
+                    <div class="text-muted small fw-semibold">Kas Masuk</div>
+                    <div class="h4 mb-0 fw-bold text-heading"><?= e(rupiah($collected)) ?></div>
+                    <div class="text-success small fw-semibold" style="font-size: 0.72rem;">Sudah dibayar</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card stat-amber h-100">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon amber">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-semibold">Belum Terbayar</div>
+                    <div class="h4 mb-0 fw-bold text-heading"><?= e(rupiah($uncollected)) ?></div>
+                    <div class="text-warning small fw-semibold" style="font-size: 0.72rem;">Sisa piutang</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Table Card -->
 <div class="card shadow-sm">
-    <div class="p-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+    <div class="card-header-clean flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-table text-primary"></i>
-            <h2 class="h6 fw-bold mb-0">Rincian Transaksi</h2>
+            <div class="icon-box bg-primary-subtle text-primary">
+                <i class="bi bi-table"></i>
+            </div>
+            <div>
+                <h2 class="h6 fw-bold mb-0">Rincian Transaksi</h2>
+                <small class="text-muted">Periode: <?= date('d M Y', strtotime($from)) ?> s/d <?= date('d M Y', strtotime($to)) ?></small>
+            </div>
         </div>
-        <span class="text-muted small"><?= count($transactions) ?> baris data</span>
+        <div class="no-print" style="min-width: 220px;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Cari nota atau pelanggan..." data-table-search="#reportTable">
+            </div>
+        </div>
     </div>
+
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" id="reportTable">
             <thead>
                 <tr>
                     <th>Kode Nota</th>
-                    <th>Tanggal</th>
+                    <th>Waktu Masuk</th>
                     <th>Pelanggan</th>
                     <th>Kasir</th>
                     <th>Berat</th>
                     <th>Total</th>
                     <th>Dibayar</th>
-                    <th>Status</th>
+                    <th>Status Cucian</th>
+                    <th>Pembayaran</th>
                 </tr>
             </thead>
             <tbody>
@@ -149,14 +191,14 @@ render_header('Laporan Transaksi');
                         <span class="font-monospace fw-bold text-primary"><?= e($transaction['kode_nota']) ?></span>
                     </td>
                     <td>
-                        <div class="text-heading"><?= e(date('d/m/Y', strtotime($transaction['dibuat_pada']))) ?></div>
-                        <div class="text-muted small"><?= e(date('H:i', strtotime($transaction['dibuat_pada']))) ?> WIB</div>
+                        <div class="text-heading small"><?= e(date('d/m/Y', strtotime($transaction['dibuat_pada']))) ?></div>
+                        <div class="text-muted" style="font-size: 0.72rem;"><?= e(date('H:i', strtotime($transaction['dibuat_pada']))) ?> WIB</div>
                     </td>
                     <td>
-                        <div class="fw-semibold text-heading"><?= e($transaction['nama_pelanggan']) ?></div>
+                        <span class="fw-semibold text-heading"><?= e($transaction['nama_pelanggan']) ?></span>
                     </td>
                     <td>
-                        <span class="text-muted"><?= e($transaction['nama_kasir']) ?></span>
+                        <span class="text-muted small"><?= e($transaction['nama_kasir']) ?></span>
                     </td>
                     <td>
                         <span class="fw-semibold"><?= e($transaction['berat']) ?> kg</span>
@@ -168,6 +210,12 @@ render_header('Laporan Transaksi');
                         <span class="fw-semibold text-success"><?= e(rupiah($transaction['dibayar'])) ?></span>
                     </td>
                     <td>
+                        <span class="badge-soft <?= e(status_badge_class($transaction['status_cucian'])) ?>">
+                            <i class="bi <?= e(status_icon($transaction['status_cucian'])) ?>"></i>
+                            <?= e($transaction['status_cucian']) ?>
+                        </span>
+                    </td>
+                    <td>
                         <span class="badge-soft <?= e(status_badge_class($transaction['status_pembayaran'])) ?>">
                             <?= e($transaction['status_pembayaran']) ?>
                         </span>
@@ -176,7 +224,7 @@ render_header('Laporan Transaksi');
             <?php endforeach; ?>
             <?php if (!$transactions): ?>
                 <tr>
-                    <td colspan="8">
+                    <td colspan="9">
                         <div class="empty-state">
                             <div class="empty-state-icon">
                                 <i class="bi bi-calendar-x"></i>
@@ -188,6 +236,17 @@ render_header('Laporan Transaksi');
                 </tr>
             <?php endif; ?>
             </tbody>
+            <?php if ($transactions): ?>
+            <tfoot class="table-light">
+                <tr class="fw-bold text-heading">
+                    <td colspan="4" class="text-end">Total Ringkasan:</td>
+                    <td><?= number_format($totalWeight, 1) ?> kg</td>
+                    <td><?= e(rupiah($gross)) ?></td>
+                    <td class="text-success"><?= e(rupiah($collected)) ?></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            <?php endif; ?>
         </table>
     </div>
 </div>
